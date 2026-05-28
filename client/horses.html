@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Equestria — Quản lý ngựa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-mode" data-page="horses">
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-logo"><i class="fa-solid fa-horse-head"></i></div>
+        <div class="brand-text"><h1>Equestria</h1><span>Racing Control</span></div>
+      </div>
+      <nav class="nav">
+        <p class="nav-label">Tổng quan</p>
+        <a href="index.html" class="nav-item" data-page="dashboard"><i class="fa-solid fa-chart-line"></i><span>Dashboard</span></a>
+        <p class="nav-label">Quản lý</p>
+        <a href="horses.html" class="nav-item" data-page="horses"><i class="fa-solid fa-horse"></i><span>Quản lý ngựa</span></a>
+        <a href="jockeys.html" class="nav-item" data-page="jockeys"><i class="fa-solid fa-user-tie"></i><span>Quản lý jockey</span></a>
+        <a href="schedule.html" class="nav-item" data-page="schedule"><i class="fa-regular fa-calendar"></i><span>Lịch đua</span></a>
+        <a href="results.html" class="nav-item" data-page="results"><i class="fa-solid fa-trophy"></i><span>Kết quả cuộc đua</span></a>
+        <p class="nav-label">Khác</p>
+        <a href="index.html#stats" class="nav-item" data-page="stats"><i class="fa-solid fa-chart-pie"></i><span>Thống kê</span></a>
+        <a href="index.html#settings" class="nav-item" data-page="settings"><i class="fa-solid fa-gear"></i><span>Cài đặt</span></a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="upgrade-card">
+          <i class="fa-solid fa-crown"></i>
+          <p>Nâng cấp <b>Premium</b></p>
+          <button>Khám phá</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="header">
+        <div class="header-left">
+          <button class="icon-btn" id="toggleSidebar"><i class="fa-solid fa-bars"></i></button>
+          <div class="search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" placeholder="Tìm ngựa, jockey, giải đấu…" />
+            <kbd>⌘ K</kbd>
+          </div>
+        </div>
+        <div class="header-right">
+          <button class="icon-btn" id="themeToggle" title="Đổi giao diện"><i class="fa-solid fa-moon"></i></button>
+          <button class="icon-btn notif"><i class="fa-regular fa-bell"></i><span class="dot"></span></button>
+          <div class="divider"></div>
+          <div class="profile">
+            <img src="https://i.pravatar.cc/80?img=15" alt="avatar" />
+            <div><p class="name">Trần Minh</p><span class="role">Quản trị viên</span></div>
+            <i class="fa-solid fa-chevron-down"></i>
+          </div>
+        </div>
+      </header>
+
+      <section class="page active" id="page-horses">
+        <div class="page-head">
+          <div><h2>Quản lý ngựa</h2><p>Quản lý toàn bộ ngựa đua trong hệ thống</p></div>
+          <div class="page-actions">
+            <button class="btn ghost"><i class="fa-solid fa-filter"></i> Lọc</button>
+            <button class="btn primary" id="addHorseBtn"><i class="fa-solid fa-plus"></i> Thêm ngựa</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="search small">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" placeholder="Tìm ngựa theo tên, giống, chủ sở hữu…" />
+            </div>
+            <div class="seg">
+              <button class="seg-btn active">Tất cả</button>
+              <button class="seg-btn">Đang thi đấu</button>
+              <button class="seg-btn">Nghỉ</button>
+              <button class="seg-btn">Chấn thương</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table zebra">
+              <thead><tr><th>Ngựa</th><th>Tuổi</th><th>Giống</th><th>Tốc độ</th><th>Chủ sở hữu</th><th>Trạng thái</th><th class="right">Hành động</th></tr></thead>
+              <tbody id="horseTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="modal">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="modalTitle">Thêm ngựa mới</h3>
+        <button class="icon-btn" id="closeModal"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form class="modal-body" id="horseForm">
+        <div class="form-row">
+          <label>Tên ngựa<input required type="text" placeholder="VD: Thunderbolt" /></label>
+          <label>Tuổi<input required type="number" min="1" max="25" placeholder="5" /></label>
+        </div>
+        <div class="form-row">
+          <label>Giống<select><option>Thoroughbred</option><option>Arabian</option><option>Quarter Horse</option><option>Standardbred</option></select></label>
+          <label>Tốc độ tối đa (km/h)<input required type="number" placeholder="68" /></label>
+        </div>
+        <div class="form-row">
+          <label>Chủ sở hữu<input required type="text" placeholder="Nguyễn Văn A" /></label>
+          <label>Trạng thái<select><option>Đang thi đấu</option><option>Nghỉ ngơi</option><option>Chấn thương</option></select></label>
+        </div>
+        <label>Ghi chú<textarea rows="3" placeholder="Thông tin thêm…"></textarea></label>
+        <div class="modal-foot">
+          <button type="button" class="btn ghost" id="cancelModal">Huỷ</button>
+          <button type="submit" class="btn primary"><i class="fa-solid fa-check"></i> Lưu ngựa</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
