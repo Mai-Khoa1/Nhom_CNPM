@@ -1,0 +1,38 @@
+export const ROUTES = {
+  HOME: '/',
+  LOGIN: '/login',
+  REGISTER: '/register',
+  RACES: '/races',
+  RACE_DETAIL: '/races/:id',
+  LEADERBOARD: '/leaderboard',
+  FORBIDDEN: '/403',
+
+  // Horse Owner
+  MY_HORSES: '/my-horses',
+  HORSE_CREATE: '/my-horses/create',
+  HORSE_EDIT: '/my-horses/:id/edit',
+  HORSE_DETAIL: '/my-horses/:id',
+  MY_JOCKEYS: '/my-jockeys',
+  JOCKEY_CREATE: '/my-jockeys/create',
+  JOCKEY_EDIT: '/my-jockeys/:id/edit',
+  JOCKEY_DETAIL: '/my-jockeys/:id',
+  MY_REGISTRATIONS: '/my-registrations',
+  REGISTRATION_NEW: '/my-registrations/new',
+  REGISTRATION_DETAIL: '/my-registrations/:id',
+  PROFILE: '/profile',
+  NOTIFICATIONS: '/notifications',
+
+  // Admin
+  ADMIN_DASHBOARD: '/admin/dashboard',
+  ADMIN_SEASONS: '/admin/seasons',
+  ADMIN_RACES: '/admin/races',
+  ADMIN_LANES: '/admin/lanes',
+  ADMIN_REGISTRATIONS: '/admin/registrations',
+  ADMIN_RESULTS: '/admin/results',
+  ADMIN_NOTIFICATIONS: '/admin/notifications',
+  ADMIN_FILES: '/admin/files',
+  ADMIN_USERS: '/admin/users',
+  ADMIN_ROLES: '/admin/roles',
+  ADMIN_AUDIT_LOGS: '/admin/audit-logs',
+  ADMIN_SYSTEM: '/admin/system',
+};
