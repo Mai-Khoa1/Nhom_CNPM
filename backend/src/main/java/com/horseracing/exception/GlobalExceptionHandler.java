@@ -51,7 +51,37 @@ public class GlobalExceptionHandler {
         error.put("message", "Invalid credentials");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
-    
+
+    /**
+     * Handle resource not found (404)
+     */
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleResourceNotFoundException(ResourceNotFoundException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    /**
+     * Handle duplicate resource (409)
+     */
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicateResourceException(DuplicateResourceException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
+     * Handle resource in use - cannot delete (409)
+     */
+    @ExceptionHandler(ResourceInUseException.class)
+    public ResponseEntity<Map<String, String>> handleResourceInUseException(ResourceInUseException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     /**
      * Handle runtime exceptions
      */
