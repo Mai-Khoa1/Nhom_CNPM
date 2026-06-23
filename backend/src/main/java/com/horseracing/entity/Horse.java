@@ -1,60 +1,63 @@
 package com.horseracing.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 /**
- * Entity Result (kết quả thi đấu) - Ánh xạ bảng KetQuaThiDua trong CSDL.
- * Tên class giữ "Result" theo yêu cầu hệ thống, bảng vật lý là KetQuaThiDua.
+ * Horse Entity - Represents racing horses
  */
 @Entity
-@Table(name = "KetQuaThiDau")
+@Table(name = "horses")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Result {
-
-    public static final String TRANG_THAI_CHUA_CONG_BO = "Chưa công bố";
-    public static final String TRANG_THAI_DA_CONG_BO = "Đã công bố";
-
+public class Horse {
+    
     @Id
-    @Column(name = "maKetQua", length = 50)
-    private String maKetQua;
-
-    @Column(name = "maChangDua", nullable = false, length = 50)
-    private String maChangDua;
-
-    @Column(name = "maNgua", nullable = false, length = 50)
-    private String maNgua;
-
-    @Column(name = "hang", nullable = false)
-    private Integer hang;
-
-    @Column(name = "thoiGianHoanThanh", length = 50)
-    private String thoiGianHoanThanh;
-
-    @Column(name = "diem")
-    private Double diem;
-
-    @Column(name = "ghiChuChuyenMon", columnDefinition = "TEXT")
-    private String ghiChuChuyenMon;
-
-    @Column(name = "trangThaiCongBo", length = 50)
-    private String trangThaiCongBo;
-
-    @Column(name = "ngayCongBo")
-    private LocalDateTime ngayCongBo;
-
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @Column(nullable = false, length = 100)
+    private String name;
+    
+    @Column(nullable = false, length = 50)
+    private String breed;
+    
+    @Column(nullable = false)
+    private Integer age;
+    
+    @Column(nullable = false)
+    private Double speed;
+    
+    @Column(length = 100)
+    private String owner;
+    
+    @Column(length = 50)
+    private String status;
+    
+    @Column(length = 500)
+    private String notes;
+    
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+    
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+    
     @PrePersist
     protected void onCreate() {
-        if (diem == null) {
-            diem = 0.0;
-        }
-        if (trangThaiCongBo == null) {
-            trangThaiCongBo = TRANG_THAI_CHUA_CONG_BO;
-        }
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+    
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }
