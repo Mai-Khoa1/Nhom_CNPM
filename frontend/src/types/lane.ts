@@ -1,12 +1,12 @@
 export interface LaneAssignRequest {
-  registrationId: number;
+  registrationId: string;
   laneNumber: number;
 }
 
 export interface LaneResponse {
-  id: number;
-  raceId: number;
-  registrationId: number;
+  id: string;
+  raceId: string;
+  registrationId: string;
   horseName: string;
   jockeyName: string;
   laneNumber: number;

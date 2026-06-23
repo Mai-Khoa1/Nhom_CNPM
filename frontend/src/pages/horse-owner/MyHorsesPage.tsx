@@ -24,7 +24,7 @@ const MyHorsesPage = () => {
   const [page, setPage] = useState(0);
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const debouncedKeyword = useDebounce(keyword);
 
   const params: Record<string, unknown> = {
@@ -40,7 +40,7 @@ const MyHorsesPage = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => horseApi.delete(id),
+    mutationFn: (id: string) => horseApi.delete(id),
     onSuccess: () => {
       toast.success('Đã xóa ngựa');
       queryClient.invalidateQueries({ queryKey: queryKeys.horses.all });

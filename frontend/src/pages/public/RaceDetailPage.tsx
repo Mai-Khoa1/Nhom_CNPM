@@ -15,14 +15,14 @@ const RaceDetailPage = () => {
   const { id } = useParams<{ id: string }>();
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: queryKeys.races.detail(Number(id)),
-    queryFn: () => raceApi.getById(Number(id)),
+    queryKey: queryKeys.races.detail(id ?? ''),
+    queryFn: () => raceApi.getById(id ?? ''),
     enabled: !!id,
   });
 
   const { data: registrationsData, isLoading: regLoading } = useQuery({
-    queryKey: queryKeys.races.registrations(Number(id)),
-    queryFn: () => raceApi.getRegistrations(Number(id)),
+    queryKey: queryKeys.races.registrations(id ?? ''),
+    queryFn: () => raceApi.getRegistrations(id ?? ''),
     enabled: !!id,
   });
 

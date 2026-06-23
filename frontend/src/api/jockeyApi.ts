@@ -6,21 +6,21 @@ export const jockeyApi = {
   getAll: (params?: Record<string, unknown>) =>
     axiosInstance.get<ApiResponse<PageResponse<JockeyResponse>>>('/jockeys', { params }),
 
-  getById: (id: number) =>
+  getById: (id: string) =>
     axiosInstance.get<ApiResponse<JockeyResponse>>(`/jockeys/${id}`),
 
   create: (data: JockeyCreateRequest) =>
     axiosInstance.post<ApiResponse<JockeyResponse>>('/jockeys', data),
 
-  update: (id: number, data: JockeyUpdateRequest) =>
+  update: (id: string, data: JockeyUpdateRequest) =>
     axiosInstance.put<ApiResponse<JockeyResponse>>(`/jockeys/${id}`, data),
 
-  delete: (id: number) =>
+  delete: (id: string) =>
     axiosInstance.delete<ApiResponse<void>>(`/jockeys/${id}`),
 
-  approve: (id: number) =>
+  approve: (id: string) =>
     axiosInstance.patch<ApiResponse<JockeyResponse>>(`/jockeys/${id}/approve`),
 
-  reject: (id: number, reason: string) =>
+  reject: (id: string, reason: string) =>
     axiosInstance.patch<ApiResponse<JockeyResponse>>(`/jockeys/${id}/reject`, { reason }),
 };

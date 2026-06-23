@@ -7,7 +7,7 @@ export const auditApi = {
   getAll: (params?: {
     page?: number;
     size?: number;
-    userId?: number;
+    userId?: string;
     action?: AuditAction;
     targetType?: string;
     fromDate?: string;

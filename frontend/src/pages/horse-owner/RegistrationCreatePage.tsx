@@ -17,9 +17,9 @@ import { toast } from 'sonner';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
 const registrationSchema = z.object({
-  raceId: z.number({ required_error: 'Chọn cuộc đua' }).min(1, 'Chọn cuộc đua'),
-  horseId: z.number({ required_error: 'Chọn ngựa' }).min(1, 'Chọn ngựa'),
-  jockeyId: z.number({ required_error: 'Chọn nài' }).min(1, 'Chọn nài'),
+  raceId: z.string({ required_error: 'Chọn cuộc đua' }).min(1, 'Chọn cuộc đua'),
+  horseId: z.string({ required_error: 'Chọn ngựa' }).min(1, 'Chọn ngựa'),
+  jockeyId: z.string({ required_error: 'Chọn nài' }).min(1, 'Chọn nài'),
 });
 
 type RegistrationFormData = z.infer<typeof registrationSchema>;
@@ -75,11 +75,11 @@ const RegistrationCreatePage = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-2xl">
             <div>
               <Label>Cuộc đua *</Label>
-              <Select onValueChange={(v) => setValue('raceId', Number(v))}>
+              <Select onValueChange={(v) => setValue('raceId', v)}>
                 <SelectTrigger><SelectValue placeholder="Chọn cuộc đua" /></SelectTrigger>
                 <SelectContent>
                   {races.map((race) => (
-                    <SelectItem key={race.id} value={String(race.id)}>
+                    <SelectItem key={race.id} value={race.id}>
                       {race.name} - {race.location} ({race.raceDate})
                     </SelectItem>
                   ))}
@@ -89,11 +89,11 @@ const RegistrationCreatePage = () => {
             </div>
             <div>
               <Label>Ngựa *</Label>
-              <Select onValueChange={(v) => setValue('horseId', Number(v))}>
+              <Select onValueChange={(v) => setValue('horseId', v)}>
                 <SelectTrigger><SelectValue placeholder="Chọn ngựa" /></SelectTrigger>
                 <SelectContent>
                   {horses.map((horse) => (
-                    <SelectItem key={horse.id} value={String(horse.id)}>
+                    <SelectItem key={horse.id} value={horse.id}>
                       {horse.name} ({horse.code})
                     </SelectItem>
                   ))}
@@ -103,11 +103,11 @@ const RegistrationCreatePage = () => {
             </div>
             <div>
               <Label>Nài *</Label>
-              <Select onValueChange={(v) => setValue('jockeyId', Number(v))}>
+              <Select onValueChange={(v) => setValue('jockeyId', v)}>
                 <SelectTrigger><SelectValue placeholder="Chọn nài" /></SelectTrigger>
                 <SelectContent>
                   {jockeys.map((jockey) => (
-                    <SelectItem key={jockey.id} value={String(jockey.id)}>
+                    <SelectItem key={jockey.id} value={jockey.id}>
                       {jockey.fullName}
                     </SelectItem>
                   ))}

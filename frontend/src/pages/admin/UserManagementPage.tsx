@@ -29,7 +29,7 @@ const UserManagementPage = () => {
   });
 
   const lockMutation = useMutation({
-    mutationFn: (id: number) => userApi.lock(id),
+    mutationFn: (id: string) => userApi.lock(id),
     onSuccess: () => {
       toast.success('Đã khóa tài khoản');
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -38,7 +38,7 @@ const UserManagementPage = () => {
   });
 
   const unlockMutation = useMutation({
-    mutationFn: (id: number) => userApi.unlock(id),
+    mutationFn: (id: string) => userApi.unlock(id),
     onSuccess: () => {
       toast.success('Đã mở khóa tài khoản');
       queryClient.invalidateQueries({ queryKey: ['users'] });

@@ -33,7 +33,7 @@ export interface TokenRefreshResponse {
 }
 
 export interface UserResponse {
-  id: number;
+  id: string;
   username: string;
   fullName: string;
   email: string;

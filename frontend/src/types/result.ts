@@ -1,21 +1,21 @@
 export interface ResultDetailItem {
-  registrationId: number;
+  registrationId: string;
   finishPosition: number;
   finishTime?: string;
   notes?: string;
 }
 
 export interface ResultEntryRequest {
-  raceId: number;
+  raceId: string;
   details: ResultDetailItem[];
 }
 
 export interface ResultDetailResponse {
   finishPosition: number;
-  horseId: number;
+  horseId: string;
   horseName: string;
   horseCode: string;
-  jockeyId: number;
+  jockeyId: string;
   jockeyName: string;
   laneNumber?: number;
   finishTime?: string;
@@ -24,8 +24,8 @@ export interface ResultDetailResponse {
 }
 
 export interface ResultResponse {
-  id: number;
-  raceId: number;
+  id: string;
+  raceId: string;
   raceName: string;
   isPublished: boolean;
   publishedAt?: string;

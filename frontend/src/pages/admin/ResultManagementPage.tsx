@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 
 const ResultManagementPage = () => {
   const queryClient = useQueryClient();
-  const [selectedRaceId, setSelectedRaceId] = useState<number | null>(null);
+  const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null);
 
   const { data: racesData } = useQuery({
     queryKey: queryKeys.races.list({ size: 100 }),
@@ -29,7 +29,7 @@ const ResultManagementPage = () => {
   });
 
   const publishMutation = useMutation({
-    mutationFn: (raceId: number) => resultApi.publish(raceId),
+    mutationFn: (raceId: string) => resultApi.publish(raceId),
     onSuccess: () => {
       toast.success('Công bố kết quả thành công!');
       queryClient.invalidateQueries({ queryKey: ['results', selectedRaceId] });
@@ -74,13 +74,13 @@ const ResultManagementPage = () => {
           <CardTitle className="text-base">Chọn cuộc đua</CardTitle>
         </CardHeader>
         <CardContent>
-          <Select onValueChange={(v) => setSelectedRaceId(Number(v))}>
+          <Select onValueChange={(v) => setSelectedRaceId(v)}>
             <SelectTrigger className="w-full md:w-96">
               <SelectValue placeholder="Chọn cuộc đua để xem kết quả" />
             </SelectTrigger>
             <SelectContent>
               {races.map((race: RaceResponse) => (
-                <SelectItem key={race.id} value={String(race.id)}>
+                <SelectItem key={race.id} value={race.id}>
                   {race.name} - {race.status}
                 </SelectItem>
               ))}

@@ -21,8 +21,8 @@ const JockeyEditPage = () => {
   const queryClient = useQueryClient();
 
   const { data, isLoading: loadingJockey } = useQuery({
-    queryKey: queryKeys.jockeys.detail(Number(id)),
-    queryFn: () => jockeyApi.getById(Number(id)),
+    queryKey: queryKeys.jockeys.detail(id ?? ''),
+    queryFn: () => jockeyApi.getById(id ?? ''),
     enabled: !!id,
   });
 
@@ -41,7 +41,7 @@ const JockeyEditPage = () => {
   });
 
   const mutation = useMutation({
-    mutationFn: (formData: JockeyFormData) => jockeyApi.update(Number(id), formData),
+    mutationFn: (formData: JockeyFormData) => jockeyApi.update(id ?? '', formData),
     onSuccess: () => {
       toast.success('Cập nhật nài thành công!');
       queryClient.invalidateQueries({ queryKey: queryKeys.jockeys.all });

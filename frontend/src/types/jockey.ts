@@ -12,14 +12,14 @@ export interface JockeyCreateRequest {
 export type JockeyUpdateRequest = Partial<JockeyCreateRequest>;
 
 export interface JockeyResponse {
-  id: number;
+  id: string;
   fullName: string;
   dateOfBirth: string;
   gender: Gender;
   experienceYears?: number;
   weight?: number;
   licenseNumber?: string;
-  ownerId: number;
+  ownerId: string;
   ownerName: string;
   avatarUrl?: string;
   licenseScanUrl?: string;

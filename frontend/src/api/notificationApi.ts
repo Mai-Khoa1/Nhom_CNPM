@@ -6,7 +6,7 @@ export const notificationApi = {
   getAll: (params?: { page?: number; size?: number; isRead?: boolean }) =>
     axiosInstance.get<ApiResponse<PageResponse<NotificationResponse>>>('/notifications', { params }),
 
-  markRead: (id: number) =>
+  markRead: (id: string) =>
     axiosInstance.patch<ApiResponse<void>>(`/notifications/${id}/read`),
 
   markAllRead: () =>

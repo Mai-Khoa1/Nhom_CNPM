@@ -14,8 +14,8 @@ const RegistrationDetailPage = () => {
   const navigate = useNavigate();
 
   const { data, isLoading } = useQuery({
-    queryKey: queryKeys.registrations.detail(Number(id)),
-    queryFn: () => registrationApi.getById(Number(id)),
+    queryKey: queryKeys.registrations.detail(id ?? ''),
+    queryFn: () => registrationApi.getById(id ?? ''),
     enabled: !!id,
   });
 

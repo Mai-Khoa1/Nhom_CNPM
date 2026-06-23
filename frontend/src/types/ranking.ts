@@ -1,7 +1,7 @@
 export interface HorseRankingResponse {
-  id: number;
-  seasonId: number;
-  horseId: number;
+  id: string;
+  seasonId: string;
+  horseId: string;
   horseName: string;
   horseCode: string;
   ownerName: string;
@@ -12,9 +12,9 @@ export interface HorseRankingResponse {
 }
 
 export interface JockeyRankingResponse {
-  id: number;
-  seasonId: number;
-  jockeyId: number;
+  id: string;
+  seasonId: string;
+  jockeyId: string;
   jockeyName: string;
   ownerName: string;
   totalPoints: number;

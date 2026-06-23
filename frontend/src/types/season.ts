@@ -10,19 +10,19 @@ export interface SeasonCreateRequest {
 export type SeasonUpdateRequest = Partial<SeasonCreateRequest>;
 
 export interface SeasonResponse {
-  id: number;
+  id: string;
   name: string;
   startDate: string;
   endDate: string;
   status: SeasonStatus;
   description?: string;
-  createdBy?: number;
+  createdBy?: string;
   createdAt: string;
 }
 
 export interface PointRuleResponse {
-  id: number;
-  seasonId: number;
+  id: string;
+  seasonId: string;
   position: number;
   point: number;
 }

@@ -19,7 +19,7 @@ import { toast } from 'sonner';
 const MyJockeysPage = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const params = { page, size: 10 };
 
@@ -29,7 +29,7 @@ const MyJockeysPage = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => jockeyApi.delete(id),
+    mutationFn: (id: string) => jockeyApi.delete(id),
     onSuccess: () => {
       toast.success('Đã xóa nài');
       queryClient.invalidateQueries({ queryKey: queryKeys.jockeys.all });

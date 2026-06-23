@@ -15,8 +15,8 @@ const HorseDetailPage = () => {
   const navigate = useNavigate();
 
   const { data, isLoading } = useQuery({
-    queryKey: queryKeys.horses.detail(Number(id)),
-    queryFn: () => horseApi.getById(Number(id)),
+    queryKey: queryKeys.horses.detail(id ?? ''),
+    queryFn: () => horseApi.getById(id ?? ''),
     enabled: !!id,
   });
 

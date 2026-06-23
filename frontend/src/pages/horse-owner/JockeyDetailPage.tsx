@@ -15,8 +15,8 @@ const JockeyDetailPage = () => {
   const navigate = useNavigate();
 
   const { data, isLoading } = useQuery({
-    queryKey: queryKeys.jockeys.detail(Number(id)),
-    queryFn: () => jockeyApi.getById(Number(id)),
+    queryKey: queryKeys.jockeys.detail(id ?? ''),
+    queryFn: () => jockeyApi.getById(id ?? ''),
     enabled: !!id,
   });
 

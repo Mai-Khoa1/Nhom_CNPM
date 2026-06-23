@@ -29,7 +29,7 @@ const AdminNotificationsPage = () => {
   });
 
   const markReadMutation = useMutation({
-    mutationFn: (id: number) => notificationApi.markRead(id),
+    mutationFn: (id: string) => notificationApi.markRead(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
     },

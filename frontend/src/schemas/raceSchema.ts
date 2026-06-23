@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const raceSchema = z.object({
-  seasonId: z.number().min(1, 'Chọn mùa giải'),
+  seasonId: z.string().min(1, 'Chọn mùa giải'),
   name: z.string().min(1, 'Tên cuộc đua bắt buộc'),
   raceDate: z.string().refine((val) => new Date(val) > new Date(), 'Ngày đua phải là ngày tương lai'),
   location: z.string().min(1, 'Địa điểm bắt buộc'),

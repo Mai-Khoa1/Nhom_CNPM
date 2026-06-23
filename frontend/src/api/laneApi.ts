@@ -6,9 +6,9 @@ export const laneApi = {
   assign: (data: LaneAssignRequest) =>
     axiosInstance.post<ApiResponse<LaneResponse>>('/lanes', data),
 
-  update: (id: number, data: LaneAssignRequest) =>
+  update: (id: string, data: LaneAssignRequest) =>
     axiosInstance.put<ApiResponse<LaneResponse>>(`/lanes/${id}`, data),
 
-  delete: (id: number) =>
+  delete: (id: string) =>
     axiosInstance.delete<ApiResponse<void>>(`/lanes/${id}`),
 };

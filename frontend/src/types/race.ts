@@ -1,7 +1,7 @@
 import { RaceStatus } from './enums';
 
 export interface RaceCreateRequest {
-  seasonId: number;
+  seasonId: string;
   name: string;
   raceDate: string;
   location: string;
@@ -13,8 +13,8 @@ export interface RaceCreateRequest {
 export type RaceUpdateRequest = Partial<RaceCreateRequest>;
 
 export interface RaceResponse {
-  id: number;
-  seasonId: number;
+  id: string;
+  seasonId: string;
   seasonName: string;
   name: string;
   raceDate: string;

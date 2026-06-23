@@ -1,22 +1,22 @@
 import { RegistrationStatus } from './enums';
 
 export interface RegistrationCreateRequest {
-  raceId: number;
-  horseId: number;
-  jockeyId: number;
+  raceId: string;
+  horseId: string;
+  jockeyId: string;
 }
 
 export interface RegistrationResponse {
-  id: number;
-  raceId: number;
+  id: string;
+  raceId: string;
   raceName: string;
   raceDate: string;
-  horseId: number;
+  horseId: string;
   horseName: string;
   horseCode: string;
-  jockeyId: number;
+  jockeyId: string;
   jockeyName: string;
-  ownerId: number;
+  ownerId: string;
   ownerName: string;
   laneNumber?: number;
   status: RegistrationStatus;

@@ -21,8 +21,8 @@ const HorseEditPage = () => {
   const queryClient = useQueryClient();
 
   const { data, isLoading: loadingHorse } = useQuery({
-    queryKey: queryKeys.horses.detail(Number(id)),
-    queryFn: () => horseApi.getById(Number(id)),
+    queryKey: queryKeys.horses.detail(id ?? ''),
+    queryFn: () => horseApi.getById(id ?? ''),
     enabled: !!id,
   });
 
@@ -42,7 +42,7 @@ const HorseEditPage = () => {
   });
 
   const mutation = useMutation({
-    mutationFn: (formData: HorseFormData) => horseApi.update(Number(id), formData),
+    mutationFn: (formData: HorseFormData) => horseApi.update(id ?? '', formData),
     onSuccess: () => {
       toast.success('Cập nhật ngựa thành công!');
       queryClient.invalidateQueries({ queryKey: queryKeys.horses.all });

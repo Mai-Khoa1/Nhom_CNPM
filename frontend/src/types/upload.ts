@@ -1,7 +1,7 @@
 import { FileType } from './enums';
 
 export interface FileUploadResponse {
-  fileId: number;
+  fileId: string;
   url: string;
   fileName: string;
   fileType: string;

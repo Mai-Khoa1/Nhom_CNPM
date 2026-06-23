@@ -8,7 +8,7 @@ interface NotificationState {
   addNotification: (notification: NotificationResponse) => void;
   setUnreadCount: (count: number) => void;
   incrementUnread: () => void;
-  markRead: (id: number) => void;
+  markRead: (id: string) => void;
   markAllRead: () => void;
 }
 

@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 const RegistrationManagementPage = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
-  const [rejectDialog, setRejectDialog] = useState<{ open: boolean; id: number | null }>({ open: false, id: null });
+  const [rejectDialog, setRejectDialog] = useState<{ open: boolean; id: string | null }>({ open: false, id: null });
   const [rejectReason, setRejectReason] = useState('');
 
   const params = { page, size: 10 };
@@ -31,7 +31,7 @@ const RegistrationManagementPage = () => {
   });
 
   const approveMutation = useMutation({
-    mutationFn: (id: number) => registrationApi.approve(id),
+    mutationFn: (id: string) => registrationApi.approve(id),
     onSuccess: () => {
       toast.success('Đã duyệt đăng ký');
       queryClient.invalidateQueries({ queryKey: queryKeys.registrations.all });
@@ -40,7 +40,7 @@ const RegistrationManagementPage = () => {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: ({ id, reason }: { id: number; reason: string }) => registrationApi.reject(id, reason),
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => registrationApi.reject(id, reason),
     onSuccess: () => {
       toast.success('Đã từ chối đăng ký');
       queryClient.invalidateQueries({ queryKey: queryKeys.registrations.all });

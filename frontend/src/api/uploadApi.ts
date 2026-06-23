@@ -7,7 +7,7 @@ export interface UploadParams {
   file: File;
   targetType: 'HORSE' | 'JOCKEY' | 'HEALTH_RECORD' | 'DOPING_TEST';
   fileType: FileType;
-  targetId?: number;
+  targetId?: string;
   onUploadProgress?: (progressEvent: { loaded: number; total?: number }) => void;
 }
 
@@ -17,7 +17,7 @@ export const uploadApi = {
     formData.append('file', file);
     formData.append('targetType', targetType);
     formData.append('fileType', fileType);
-    if (targetId) formData.append('targetId', targetId.toString());
+    if (targetId) formData.append('targetId', targetId);
 
     return axiosInstance.post<ApiResponse<FileUploadResponse>>('/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -25,6 +25,6 @@ export const uploadApi = {
     });
   },
 
-  getById: (id: number) =>
+  getById: (id: string) =>
     axiosInstance.get(`/upload/${id}`),
 };

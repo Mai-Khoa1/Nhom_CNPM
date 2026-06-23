@@ -13,7 +13,7 @@ export interface HorseCreateRequest {
 export type HorseUpdateRequest = Partial<HorseCreateRequest>;
 
 export interface HorseResponse {
-  id: number;
+  id: string;
   code: string;
   name: string;
   breed: string;
@@ -25,7 +25,7 @@ export interface HorseResponse {
   passportUrl?: string;
   healthCertUrl?: string;
   status: HorseStatus;
-  ownerId: number;
+  ownerId: string;
   ownerName: string;
   createdAt: string;
 }
@@ -36,5 +36,5 @@ export interface HorseListParams {
   sort?: string;
   keyword?: string;
   status?: HorseStatus;
-  ownerId?: number;
+  ownerId?: string;
 }

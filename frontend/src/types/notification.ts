@@ -1,13 +1,13 @@
 import { NotificationType } from './enums';
 
 export interface NotificationResponse {
-  id: number;
-  userId: number;
+  id: string;
+  userId: string;
   title: string;
   message: string;
   type: NotificationType;
   isRead: boolean;
   targetType?: string;
-  targetId?: number;
+  targetId?: string;
   createdAt: string;
 }

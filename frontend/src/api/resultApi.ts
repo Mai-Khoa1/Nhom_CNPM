@@ -6,12 +6,12 @@ export const resultApi = {
   create: (data: ResultEntryRequest) =>
     axiosInstance.post<ApiResponse<ResultResponse>>('/results', data),
 
-  getByRaceId: (raceId: number) =>
+  getByRaceId: (raceId: string) =>
     axiosInstance.get<ApiResponse<ResultResponse>>(`/results/${raceId}`),
 
-  update: (raceId: number, data: ResultEntryRequest) =>
+  update: (raceId: string, data: ResultEntryRequest) =>
     axiosInstance.put<ApiResponse<ResultResponse>>(`/results/${raceId}`, data),
 
-  publish: (raceId: number) =>
+  publish: (raceId: string) =>
     axiosInstance.patch<ApiResponse<void>>(`/results/${raceId}/publish`),
 };

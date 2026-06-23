@@ -7,24 +7,24 @@ export const userApi = {
   getAll: (params?: Record<string, unknown>) =>
     axiosInstance.get<ApiResponse<PageResponse<UserResponse>>>('/users', { params }),
 
-  getById: (id: number) =>
+  getById: (id: string) =>
     axiosInstance.get<ApiResponse<UserResponse>>(`/users/${id}`),
 
   create: (data: UserCreateRequest) =>
     axiosInstance.post<ApiResponse<UserResponse>>('/users', data),
 
-  update: (id: number, data: UserUpdateRequest) =>
+  update: (id: string, data: UserUpdateRequest) =>
     axiosInstance.put<ApiResponse<UserResponse>>(`/users/${id}`, data),
 
-  delete: (id: number) =>
+  delete: (id: string) =>
     axiosInstance.delete<ApiResponse<void>>(`/users/${id}`),
 
-  lock: (id: number) =>
+  lock: (id: string) =>
     axiosInstance.patch<ApiResponse<void>>(`/users/${id}/lock`),
 
-  unlock: (id: number) =>
+  unlock: (id: string) =>
     axiosInstance.patch<ApiResponse<void>>(`/users/${id}/unlock`),
 
-  changeRole: (id: number, role: Role) =>
+  changeRole: (id: string, role: Role) =>
     axiosInstance.patch<ApiResponse<UserResponse>>(`/users/${id}/role`, { role }),
 };

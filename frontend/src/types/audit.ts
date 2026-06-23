@@ -1,12 +1,12 @@
 import { AuditAction } from './enums';
 
 export interface AuditLogResponse {
-  id: number;
-  userId?: number;
+  id: string;
+  userId?: string;
   username?: string;
   action: AuditAction;
   targetType?: string;
-  targetId?: number;
+  targetId?: string;
   description?: string;
   oldValue?: string;
   newValue?: string;

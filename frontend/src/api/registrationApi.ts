@@ -12,12 +12,12 @@ export const registrationApi = {
   getMy: (params?: Record<string, unknown>) =>
     axiosInstance.get<ApiResponse<PageResponse<RegistrationResponse>>>('/registrations/my', { params }),
 
-  getById: (id: number) =>
+  getById: (id: string) =>
     axiosInstance.get<ApiResponse<RegistrationResponse>>(`/registrations/${id}`),
 
-  approve: (id: number) =>
+  approve: (id: string) =>
     axiosInstance.patch<ApiResponse<void>>(`/registrations/${id}/approve`),
 
-  reject: (id: number, reason: string) =>
+  reject: (id: string, reason: string) =>
     axiosInstance.patch<ApiResponse<void>>(`/registrations/${id}/reject`, { reason }),
 };

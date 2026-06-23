@@ -19,7 +19,7 @@ const LeaderboardPage = () => {
     queryFn: () => seasonApi.getAll({ size: 100 }),
   });
 
-  const params = { seasonId: seasonId ? Number(seasonId) : undefined, page: 0, size: 20 };
+  const params = { seasonId: seasonId || undefined, page: 0, size: 20 };
 
   const { data: horseRankings, isLoading: horseLoading } = useQuery({
     queryKey: queryKeys.rankings.horses(params),

@@ -11,7 +11,7 @@ import { DataTable, Column } from '@/components/common/DataTable';
 import { Layers, Loader2 } from 'lucide-react';
 
 const LaneManagementPage = () => {
-  const [selectedRaceId, setSelectedRaceId] = useState<number | null>(null);
+  const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null);
 
   const { data: racesData } = useQuery({
     queryKey: queryKeys.races.list({ size: 100 }),
@@ -45,13 +45,13 @@ const LaneManagementPage = () => {
           <CardTitle className="text-base">Chọn cuộc đua</CardTitle>
         </CardHeader>
         <CardContent>
-          <Select onValueChange={(v) => setSelectedRaceId(Number(v))}>
+          <Select onValueChange={(v) => setSelectedRaceId(v)}>
             <SelectTrigger className="w-full md:w-96">
               <SelectValue placeholder="Chọn cuộc đua để xem phân làn" />
             </SelectTrigger>
             <SelectContent>
               {races.map((race: RaceResponse) => (
-                <SelectItem key={race.id} value={String(race.id)}>
+                <SelectItem key={race.id} value={race.id}>
                   {race.name} - {race.location} ({race.raceDate})
                 </SelectItem>
               ))}
