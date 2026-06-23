@@ -1,7 +1,11 @@
 -- Dữ liệu mẫu khởi tạo tài khoản hệ thống công việc đua ngựa
-INSERT IGNORE INTO TaiKhoan (maTK, tenDangNhap, matKhau, hoTen, email, vaiTro, trangThai) VALUES 
+INSERT IGNORE INTO TaiKhoan (maTK, tenDangNhap, matKhau, hoTen, email, vaiTro, trangThai) VALUES
 ('TK_ADM01', 'admin', '$2a$10$vX9B.R0b6IptkQ2yP1PGO.m.yNEx9GZ19E97tqMv37839mKzB.83a', 'Lê Nguyễn Ngọc Minh', 'minhlnn2246@ut.edu.vn', 'Admin', 'Hoạt động'),
 ('TK_OWN01', 'chungua_anbinh', '$2a$10$vX9B.R0b6IptkQ2yP1PGO.m.yNEx9GZ19E97tqMv37839mKzB.83a', 'Nguyễn Văn An', 'anbinhstable@gmail.com', 'Chủ ngựa', 'Hoạt động');
+
+-- Mùa giải mặc định - dùng làm maMuaGiai mặc định khi tạo ChangDua (Schedule) vì MuaGiai chưa có module quản lý riêng
+INSERT IGNORE INTO MuaGiai (maMuaGiai, tenMuaGiai, ngayBatDau, ngayKetThuc, moTa, trangThai) VALUES
+('MG_DEFAULT', 'Mùa giải mặc định', '2026-01-01', '2026-12-31', 'Mùa giải mặc định dùng cho các chặng đua chưa gán mùa giải cụ thể', 'Đang diễn ra');
 
 -- Dữ liệu mẫu cho thông tin mở rộng chủ ngựa
 INSERT IGNORE INTO ChuNgua (maChuNgua, maTK, hoTen, diaChi, soDienThoai, email) VALUES 

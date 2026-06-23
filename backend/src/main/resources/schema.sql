@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS MuaGiai (
     ngayBatDau DATE,
     ngayKetThuc DATE,
     moTa TEXT,
-    trangThai ENUM('Mở đăng ký', 'Đang diễn ra', 'Đã kết thúc', 'Đã hủy') DEFAULT 'Mở đăng ký'
+    trangThai ENUM('Mở đăng ký', 'Đang diễn ra', 'Đã kết thúc', 'Đã hủy') DEFAULT 'Mở đăng ký',
+    ngayTao DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Bảng ChuNgua
@@ -49,6 +50,8 @@ CREATE TABLE IF NOT EXISTS ThongBao (
     tieuDe VARCHAR(150) NOT NULL,
     noiDung TEXT NOT NULL,
     loai VARCHAR(50),
+    loaiDoiTuong VARCHAR(50) COMMENT 'Loại đối tượng liên quan (targetType)',
+    maDoiTuong VARCHAR(50) COMMENT 'Mã đối tượng liên quan (targetId)',
     ngayGui DATETIME DEFAULT CURRENT_TIMESTAMP,
     trangThai ENUM('Chưa đọc', 'Đã đọc') DEFAULT 'Chưa đọc',
     FOREIGN KEY (maTK) REFERENCES TaiKhoan(maTK) ON DELETE CASCADE
@@ -66,6 +69,17 @@ CREATE TABLE IF NOT EXISTS NhatKyHoatDong (
     FOREIGN KEY (maTK) REFERENCES TaiKhoan(maTK) ON DELETE SET NULL
 );
 
+-- Bảng RefreshToken - phục vụ cơ chế access token + refresh token của JWT
+CREATE TABLE IF NOT EXISTS RefreshToken (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    token VARCHAR(500) NOT NULL UNIQUE,
+    maTK VARCHAR(50) NOT NULL,
+    ngayHetHan DATETIME NOT NULL,
+    daThuHoi BOOLEAN DEFAULT FALSE,
+    ngayTao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (maTK) REFERENCES TaiKhoan(maTK) ON DELETE CASCADE
+);
+
 -- Bảng ChangDua
 CREATE TABLE IF NOT EXISTS ChangDua (
     maChangDua VARCHAR(50) PRIMARY KEY,
@@ -77,8 +91,10 @@ CREATE TABLE IF NOT EXISTS ChangDua (
     cuLy INT,
     loaiMatSan VARCHAR(50),
     soLanDua INT DEFAULT 1,
-    trangThai ENUM('Chưa diễn ra', 'Đang đua', 'Hoàn thành', 'Đã hủy') DEFAULT 'Chưa diễn ra',
+    soNguaToiDa INT COMMENT 'Số ngựa tối đa được đăng ký (maxHorses)',
+    trangThai ENUM('Mở đăng ký', 'Đã đóng đăng ký', 'Đang đua', 'Hoàn thành', 'Đã hủy') DEFAULT 'Mở đăng ký',
     moTa TEXT,
+    ngayTao DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (maMuaGiai) REFERENCES MuaGiai(maMuaGiai) ON DELETE RESTRICT
 );
 
@@ -88,10 +104,17 @@ CREATE TABLE IF NOT EXISTS Jockey (
     maChuNgua VARCHAR(50) NOT NULL,
     hoTen VARCHAR(100) NOT NULL,
     ngaySinh DATE,
+    gioiTinh ENUM('Đực', 'Cái'),
     quocTich VARCHAR(50),
     kinhNghiem INT,
     soGiayPhep VARCHAR(50) UNIQUE,
-    trangThai ENUM('Sẵn sàng', 'Chấn thương', 'Nghỉ hưu') DEFAULT 'Sẵn sàng',
+    trangThai ENUM('Chờ duyệt', 'Đã duyệt', 'Bị từ chối', 'Đang hoạt động', 'Không hoạt động') DEFAULT 'Chờ duyệt',
+    canNang DOUBLE COMMENT 'Cân nặng hiện tại (kg)',
+    bmi DOUBLE COMMENT 'Chỉ số BMI',
+    tyLeThang DOUBLE COMMENT 'Tỷ lệ thắng (%)',
+    ghiChu VARCHAR(500) COMMENT 'Ghi chú sức khỏe',
+    ngayTao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ngayCapNhat DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (maChuNgua) REFERENCES ChuNgua(maChuNgua) ON DELETE RESTRICT
 );
 
@@ -106,7 +129,9 @@ CREATE TABLE IF NOT EXISTS Ngua (
     mauLong VARCHAR(30),
     troiLuong DOUBLE,
     trangThaiSucKhoe VARCHAR(255),
-    trangThai ENUM('Đủ điều kiện', 'Chờ duyệt', 'Chấn thương', 'Bị loại') DEFAULT 'Chờ duyệt',
+    trangThai ENUM('Chờ duyệt', 'Đủ điều kiện', 'Bị từ chối', 'Bị loại') DEFAULT 'Chờ duyệt',
+    ngayTao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ngayCapNhat DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (maChuNgua) REFERENCES ChuNgua(maChuNgua) ON DELETE RESTRICT
 );
 
@@ -132,6 +157,8 @@ CREATE TABLE IF NOT EXISTS DangKyThiDau (
     maNaiNgua VARCHAR(50) NOT NULL,
     ngayDangKy DATETIME DEFAULT CURRENT_TIMESTAMP,
     lanChay INT,
+    soLan INT COMMENT 'Số làn đua được phân (lane number)',
+    ngayGanLan DATETIME COMMENT 'Thời điểm gán làn đua',
     trangThai ENUM('Chờ duyệt', 'Đã duyệt', 'Từ chối') DEFAULT 'Chờ duyệt',
     lyDoTuChoi VARCHAR(255),
     ghiChu VARCHAR(255),
@@ -169,6 +196,28 @@ CREATE TABLE IF NOT EXISTS BangXepHang (
     soLanThamGia INT DEFAULT 0,
     FOREIGN KEY (maMuaGiai) REFERENCES MuaGiai(maMuaGiai) ON DELETE CASCADE,
     UNIQUE KEY unique_bxh_doi_tuong (maMuaGiai, doiTuongId, loaiBXH)
+);
+
+-- Bảng LuatDiem - luật tính điểm theo hạng trong từng mùa giải
+CREATE TABLE IF NOT EXISTS LuatDiem (
+    maLuatDiem VARCHAR(50) PRIMARY KEY,
+    maMuaGiai VARCHAR(50) NOT NULL,
+    hang INT NOT NULL,
+    diem DOUBLE NOT NULL DEFAULT 0,
+    FOREIGN KEY (maMuaGiai) REFERENCES MuaGiai(maMuaGiai) ON DELETE CASCADE,
+    UNIQUE KEY unique_luatdiem_hang (maMuaGiai, hang)
+);
+
+-- Bảng TepTin - lưu trữ file upload (ảnh ngựa/jockey, hồ sơ sức khỏe...)
+CREATE TABLE IF NOT EXISTS TepTin (
+    maTepTin VARCHAR(50) PRIMARY KEY,
+    tenFile VARCHAR(255) NOT NULL,
+    duongDan VARCHAR(500) NOT NULL,
+    loaiFile VARCHAR(50) COMMENT 'FileType: HORSE_PHOTO, JOCKEY_AVATAR...',
+    loaiDoiTuong VARCHAR(50) COMMENT 'HORSE, JOCKEY, HEALTH_RECORD, DOPING_TEST',
+    maDoiTuong VARCHAR(50),
+    kichThuoc BIGINT,
+    ngayTao DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Các Index tối ưu hóa truy vấn
