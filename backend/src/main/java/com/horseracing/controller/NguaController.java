@@ -1,105 +1,108 @@
 package com.horseracing.controller;
 
-import com.horseracing.dto.horse.HorseRequestDTO;
-import com.horseracing.dto.horse.HorseResponseDTO;
-import com.horseracing.service.HorseService;
-import io.swagger.v3.oas.annotations.Operation;
+import com.horseracing.dto.common.ApiResponse;
+import com.horseracing.dto.common.HorseStatus;
+import com.horseracing.dto.common.PageResponse;
+import com.horseracing.dto.ngua.NguaRequestDTO;
+import com.horseracing.dto.ngua.NguaResponseDTO;
+import com.horseracing.dto.result.RaceHistoryItemDTO;
+import com.horseracing.service.CurrentUserService;
+import com.horseracing.service.NguaService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 /**
- * NguaController - REST API quản lý ngựa đua
- * Base path: /api/ngua
+ * NguaController - quản lý ngựa đua (bảng Ngua). Base path /horses khớp frontend.
  */
 @RestController
-@RequestMapping("/api/ngua")
+@RequestMapping("/horses")
 @RequiredArgsConstructor
-@Tag(name = "Quản lý Ngựa", description = "API thêm, sửa, xóa và tìm kiếm ngựa đua")
+@Tag(name = "Quản lý Ngựa", description = "API thêm, sửa, xóa, duyệt và tìm kiếm ngựa đua")
 public class NguaController {
 
-    private final HorseService horseService;
+    private final NguaService nguaService;
+    private final CurrentUserService currentUserService;
 
-    /**
-     * Lấy tất cả ngựa
-     * GET /api/ngua
-     */
     @GetMapping
-    @Operation(summary = "Lấy danh sách tất cả ngựa đua")
-    public ResponseEntity<List<HorseResponseDTO>> getAllHorses() {
-        return ResponseEntity.ok(horseService.getAllHorses());
+    public ResponseEntity<ApiResponse<PageResponse<NguaResponseDTO>>> getAllHorses(
+            Pageable pageable,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) HorseStatus status,
+            @RequestParam(required = false) String ownerId) {
+        return ResponseEntity.ok(ApiResponse.success(nguaService.getAllHorses(pageable, keyword, status, ownerId)));
     }
 
-    /**
-     * Lấy ngựa theo ID
-     * GET /api/ngua/{maNgua}
-     */
-    @GetMapping("/{maNgua}")
-    @Operation(summary = "Lấy thông tin ngựa theo mã")
-    public ResponseEntity<HorseResponseDTO> getHorseById(@PathVariable String maNgua) {
-        return ResponseEntity.ok(horseService.getHorseById(maNgua));
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<NguaResponseDTO>> getHorseById(@PathVariable String id) {
+        return ResponseEntity.ok(ApiResponse.success(nguaService.getHorseById(id)));
     }
 
-    /**
-     * Tìm kiếm + lọc ngựa
-     * GET /api/ngua/search?tenNgua=...&trangThai=...&maChuNgua=...
-     */
-    @GetMapping("/search")
-    @Operation(summary = "Tìm kiếm và lọc ngựa theo tên, trạng thái, chủ ngựa")
-    public ResponseEntity<List<HorseResponseDTO>> searchHorses(
-            @RequestParam(required = false) String tenNgua,
-            @RequestParam(required = false) String trangThai,
-            @RequestParam(required = false) String maChuNgua) {
-        return ResponseEntity.ok(horseService.searchHorses(tenNgua, trangThai, maChuNgua));
+    @GetMapping("/{id}/race-history")
+    public ResponseEntity<ApiResponse<List<RaceHistoryItemDTO>>> getRaceHistory(@PathVariable String id) {
+        return ResponseEntity.ok(ApiResponse.success(nguaService.getRaceHistory(id)));
     }
 
-    /**
-     * Lấy ngựa theo chủ ngựa
-     * GET /api/ngua/owner/{maChuNgua}
-     */
-    @GetMapping("/owner/{maChuNgua}")
-    @Operation(summary = "Lấy danh sách ngựa theo chủ ngựa")
-    public ResponseEntity<List<HorseResponseDTO>> getHorsesByOwner(@PathVariable String maChuNgua) {
-        return ResponseEntity.ok(horseService.getHorsesByOwner(maChuNgua));
+    @GetMapping("/{id}/health")
+    public ResponseEntity<ApiResponse<List<Object>>> getHealthRecords(@PathVariable String id) {
+        return ResponseEntity.ok(ApiResponse.success(Collections.emptyList()));
     }
 
-    /**
-     * Tạo mới ngựa đua
-     * POST /api/ngua
-     */
+    @GetMapping("/{id}/doping")
+    public ResponseEntity<ApiResponse<List<Object>>> getDopingRecords(@PathVariable String id) {
+        return ResponseEntity.ok(ApiResponse.success(Collections.emptyList()));
+    }
+
     @PostMapping
-    @Operation(summary = "Thêm mới ngựa đua")
-    public ResponseEntity<HorseResponseDTO> createHorse(@Valid @RequestBody HorseRequestDTO dto) {
-        HorseResponseDTO created = horseService.createHorse(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    public ResponseEntity<ApiResponse<NguaResponseDTO>> createHorse(
+            @Valid @RequestBody NguaRequestDTO dto, Authentication authentication) {
+        String maTK = currentUserService.resolveMaTK(authentication);
+        NguaResponseDTO created = nguaService.createHorse(dto, maTK, maTK);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(created, "Thêm ngựa thành công"));
     }
 
-    /**
-     * Cập nhật thông tin ngựa
-     * PUT /api/ngua/{maNgua}
-     */
-    @PutMapping("/{maNgua}")
-    @Operation(summary = "Cập nhật thông tin ngựa đua")
-    public ResponseEntity<HorseResponseDTO> updateHorse(
-            @PathVariable String maNgua,
-            @Valid @RequestBody HorseRequestDTO dto) {
-        return ResponseEntity.ok(horseService.updateHorse(maNgua, dto));
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<NguaResponseDTO>> updateHorse(
+            @PathVariable String id, @Valid @RequestBody NguaRequestDTO dto, Authentication authentication) {
+        String staffId = currentUserService.resolveMaTK(authentication);
+        return ResponseEntity.ok(ApiResponse.success(nguaService.updateHorse(id, dto, staffId)));
     }
 
-    /**
-     * Xóa ngựa (kiểm tra lịch đua trước)
-     * DELETE /api/ngua/{maNgua}
-     */
-    @DeleteMapping("/{maNgua}")
-    @Operation(summary = "Xóa ngựa đua (không xóa nếu đang có lịch thi đấu)")
-    public ResponseEntity<Map<String, String>> deleteHorse(@PathVariable String maNgua) {
-        horseService.deleteHorse(maNgua);
-        return ResponseEntity.ok(Map.of("message", "Xóa ngựa thành công"));
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteHorse(@PathVariable String id, Authentication authentication) {
+        String staffId = currentUserService.resolveMaTK(authentication);
+        nguaService.deleteHorse(id, staffId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Xóa ngựa thành công"));
+    }
+
+    @PatchMapping("/{id}/approve")
+    public ResponseEntity<ApiResponse<NguaResponseDTO>> approveHorse(@PathVariable String id, Authentication authentication) {
+        String staffId = currentUserService.resolveMaTK(authentication);
+        return ResponseEntity.ok(ApiResponse.success(nguaService.approveHorse(id, staffId), "Đã duyệt ngựa"));
+    }
+
+    @PatchMapping("/{id}/reject")
+    public ResponseEntity<ApiResponse<NguaResponseDTO>> rejectHorse(
+            @PathVariable String id, @RequestBody(required = false) Map<String, String> body, Authentication authentication) {
+        String staffId = currentUserService.resolveMaTK(authentication);
+        String reason = body != null ? body.get("reason") : null;
+        return ResponseEntity.ok(ApiResponse.success(nguaService.rejectHorse(id, reason, staffId), "Đã từ chối ngựa"));
+    }
+
+    @PatchMapping("/{id}/disqualify")
+    public ResponseEntity<ApiResponse<NguaResponseDTO>> disqualifyHorse(
+            @PathVariable String id, @RequestBody(required = false) Map<String, String> body, Authentication authentication) {
+        String staffId = currentUserService.resolveMaTK(authentication);
+        String reason = body != null ? body.get("reason") : null;
+        return ResponseEntity.ok(ApiResponse.success(nguaService.disqualifyHorse(id, reason, staffId), "Đã loại ngựa"));
     }
 }

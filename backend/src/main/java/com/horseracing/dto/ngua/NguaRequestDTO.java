@@ -1,38 +1,30 @@
-package com.horseracing.dto.horse;
+package com.horseracing.dto.ngua;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-/**
- * DTO nhận dữ liệu khi tạo mới hoặc cập nhật ngựa đua
- */
 @Data
-public class HorseRequestDTO {
+@NoArgsConstructor
+@AllArgsConstructor
+public class NguaRequestDTO {
+
+    /** Mã ngựa tùy chọn do người dùng đặt khi tạo mới; bỏ trống sẽ tự sinh */
+    private String code;
 
     @NotBlank(message = "Tên ngựa không được để trống")
-    @Size(max = 100, message = "Tên ngựa tối đa 100 ký tự")
-    private String tenNgua;
+    private String name;
 
-    @NotBlank(message = "Giống ngựa không được để trống")
-    @Size(max = 50, message = "Giống ngựa tối đa 50 ký tự")
-    private String giongNgua;
+    private String breed;
 
-    private String ngaySinh; // yyyy-MM-dd
+    /** Định dạng ISO yyyy-MM-dd */
+    private String dateOfBirth;
 
-    private String gioiTinh; // "Đực" | "Cái"
+    /** "MALE" hoặc "FEMALE" */
+    private String gender;
 
-    @Size(max = 30, message = "Màu lông tối đa 30 ký tự")
-    private String mauLong;
+    private String color;
 
-    @DecimalMin(value = "0.0", inclusive = false, message = "Trọng lượng phải lớn hơn 0")
-    private Double troiLuong;
-
-    @Size(max = 255, message = "Tình trạng sức khỏe tối đa 255 ký tự")
-    private String trangThaiSucKhoe;
-
-    // "Đủ điều kiện" | "Chờ duyệt" | "Chấn thương" | "Bị loại"
-    private String trangThai;
-
-    @NotBlank(message = "Mã chủ ngựa không được để trống")
-    private String maChuNgua;
+    private Double weight;
 }

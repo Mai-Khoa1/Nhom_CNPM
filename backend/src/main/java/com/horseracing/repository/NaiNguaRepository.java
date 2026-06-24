@@ -1,50 +1,35 @@
 package com.horseracing.repository;
 
 import com.horseracing.entity.NaiNgua;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
-
 /**
- * Repository cho entity NaiNgua (Jockey)
+ * Repository cho entity NaiNgua (Jockey/nài ngựa).
  */
 @Repository
-public interface NaiNguaRepository extends JpaRepository<NaiNgua, String> {
+public interface NaiNguaRepository extends JpaRepository<NaiNgua, String>, JpaSpecificationExecutor<NaiNgua> {
 
-    /** Tìm kiếm theo họ tên (không phân biệt hoa thường) */
-    List<NaiNgua> findByHoTenContainingIgnoreCase(String hoTen);
+    Page<NaiNgua> findByMaChuNgua(String maChuNgua, Pageable pageable);
 
-    /** Lọc theo trạng thái */
-    List<NaiNgua> findByTrangThai(String trangThai);
+    java.util.List<NaiNgua> findByMaChuNgua(String maChuNgua);
 
-    /** Lọc theo chủ ngựa */
-    List<NaiNgua> findByMaChuNgua(String maChuNgua);
+    long countByTrangThai(String trangThai);
 
-    /** Lọc theo số năm kinh nghiệm tối thiểu */
-    List<NaiNgua> findByKinhNghiemGreaterThanEqual(Integer kinhNghiem);
-
-    /** Lọc kết hợp tên + trạng thái + kinh nghiệm tối thiểu */
-    List<NaiNgua> findByHoTenContainingIgnoreCaseAndTrangThaiAndKinhNghiemGreaterThanEqual(
-            String hoTen, String trangThai, Integer kinhNghiem);
-
-    /** Tìm theo số giấy phép */
-    Optional<NaiNgua> findBySoGiayPhep(String soGiayPhep);
-
-    /** Kiểm tra giấy phép đã tồn tại chưa */
     boolean existsBySoGiayPhep(String soGiayPhep);
 
-    /** Kiểm tra giấy phép đã tồn tại ở jockey khác */
     boolean existsBySoGiayPhepAndMaNaiNguaNot(String soGiayPhep, String maNaiNgua);
 
-    /** Kiểm tra jockey có lịch đua sắp tới không */
+    /** Kiểm tra jockey có đang nằm trong chặng đua chưa diễn ra/đang đua và đã được duyệt đăng ký không */
     @Query(value = "SELECT COUNT(*) > 0 FROM DangKyThiDau dk " +
                    "JOIN ChangDua cd ON dk.maChangDua = cd.maChangDua " +
                    "WHERE dk.maNaiNgua = :maNaiNgua " +
-                   "  AND cd.trangThai IN ('Chưa diễn ra', 'Đang đua') " +
+                   "  AND cd.trangThai IN ('Mở đăng ký', 'Đã đóng đăng ký', 'Đang đua') " +
                    "  AND dk.trangThai = 'Đã duyệt'", nativeQuery = true)
     boolean hasUpcomingRaces(@Param("maNaiNgua") String maNaiNgua);
 }

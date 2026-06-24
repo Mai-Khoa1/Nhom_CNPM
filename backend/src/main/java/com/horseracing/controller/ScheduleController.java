@@ -1,89 +1,80 @@
 package com.horseracing.controller;
 
-import com.horseracing.dto.common.ApiResponse;
-import com.horseracing.dto.common.PageResponse;
-import com.horseracing.dto.common.RaceStatus;
-import com.horseracing.dto.lane.LaneResponseDTO;
-import com.horseracing.dto.registration.RegistrationResponseDTO;
-import com.horseracing.dto.schedule.ScheduleRequestDTO;
-import com.horseracing.dto.schedule.ScheduleResponseDTO;
-import com.horseracing.service.CurrentUserService;
-import com.horseracing.service.RegistrationService;
+import com.horseracing.entity.Schedule;
 import com.horseracing.service.ScheduleService;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * ScheduleController - quản lý lịch đua / chặng đua (bảng ChangDua). Base path /races khớp frontend.
+ * Race Schedule Management Controller
  */
 @RestController
-@RequestMapping("/races")
-@RequiredArgsConstructor
-@Tag(name = "Lịch đua", description = "API quản lý lịch đua / chặng đua")
+@RequestMapping("/schedules")
 public class ScheduleController {
-
-    private final ScheduleService scheduleService;
-    private final RegistrationService registrationService;
-    private final CurrentUserService currentUserService;
-
+    
+    @Autowired
+    private ScheduleService scheduleService;
+    
+    /**
+     * Get all schedules
+     * GET /schedules
+     */
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<ScheduleResponseDTO>>> getAllRaces(
-            Pageable pageable,
-            @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) RaceStatus status,
-            @RequestParam(required = false) String seasonId) {
-        return ResponseEntity.ok(ApiResponse.success(scheduleService.getAllRaces(pageable, keyword, status, seasonId)));
+    public ResponseEntity<List<Schedule>> getAllSchedules() {
+        return ResponseEntity.ok(scheduleService.getAllSchedules());
     }
-
+    
+    /**
+     * Get schedule by ID
+     * GET /schedules/{id}
+     */
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ScheduleResponseDTO>> getRaceById(@PathVariable String id) {
-        return ResponseEntity.ok(ApiResponse.success(scheduleService.getRaceById(id)));
+    public ResponseEntity<Schedule> getScheduleById(@PathVariable Long id) {
+        return scheduleService.getScheduleById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
-
+    
+    /**
+     * Create new schedule
+     * POST /schedules
+     */
     @PostMapping
-    public ResponseEntity<ApiResponse<ScheduleResponseDTO>> createRace(
-            @Valid @RequestBody ScheduleRequestDTO dto, Authentication authentication) {
-        String staffId = currentUserService.resolveMaTK(authentication);
-        ScheduleResponseDTO created = scheduleService.createRace(dto, staffId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(created, "Tạo chặng đua thành công"));
+    public ResponseEntity<Schedule> createSchedule(@RequestBody Schedule schedule) {
+        Schedule created = scheduleService.createSchedule(schedule);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
-
+    
+    /**
+     * Update schedule
+     * PUT /schedules/{id}
+     */
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ScheduleResponseDTO>> updateRace(
-            @PathVariable String id, @Valid @RequestBody ScheduleRequestDTO dto, Authentication authentication) {
-        String staffId = currentUserService.resolveMaTK(authentication);
-        return ResponseEntity.ok(ApiResponse.success(scheduleService.updateRace(id, dto, staffId)));
+    public ResponseEntity<Schedule> updateSchedule(@PathVariable Long id, @RequestBody Schedule schedule) {
+        Schedule updated = scheduleService.updateSchedule(id, schedule);
+        return ResponseEntity.ok(updated);
     }
-
+    
+    /**
+     * Delete schedule
+     * DELETE /schedules/{id}
+     */
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteRace(@PathVariable String id, Authentication authentication) {
-        String staffId = currentUserService.resolveMaTK(authentication);
-        scheduleService.deleteRace(id, staffId);
-        return ResponseEntity.ok(ApiResponse.success(null, "Xóa chặng đua thành công"));
+    public ResponseEntity<Void> deleteSchedule(@PathVariable Long id) {
+        scheduleService.deleteSchedule(id);
+        return ResponseEntity.noContent().build();
     }
-
-    @PatchMapping("/{id}/publish")
-    public ResponseEntity<ApiResponse<ScheduleResponseDTO>> publishRace(@PathVariable String id, Authentication authentication) {
-        String staffId = currentUserService.resolveMaTK(authentication);
-        return ResponseEntity.ok(ApiResponse.success(scheduleService.publishRace(id, staffId), "Đã công bố chặng đua"));
-    }
-
-    @GetMapping("/{id}/registrations")
-    public ResponseEntity<ApiResponse<PageResponse<RegistrationResponseDTO>>> getRaceRegistrations(
-            @PathVariable String id, Pageable pageable) {
-        return ResponseEntity.ok(ApiResponse.success(registrationService.getRegistrationsByRace(id, pageable)));
-    }
-
-    @GetMapping("/{id}/lanes")
-    public ResponseEntity<ApiResponse<List<LaneResponseDTO>>> getRaceLanes(@PathVariable String id) {
-        return ResponseEntity.ok(ApiResponse.success(registrationService.getLanesByRace(id)));
+    
+    /**
+     * Get schedules by status
+     * GET /schedules/status/{status}
+     */
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<Schedule>> getSchedulesByStatus(@PathVariable String status) {
+        return ResponseEntity.ok(scheduleService.getSchedulesByStatus(status));
     }
 }

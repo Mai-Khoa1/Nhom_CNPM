@@ -1,29 +1,33 @@
-package com.horseracing.dto.horse;
+package com.horseracing.dto.ngua;
 
+import com.horseracing.dto.common.Gender;
+import com.horseracing.dto.common.HorseStatus;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/**
- * DTO trả về thông tin ngựa đua cho client
- */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
-public class HorseResponseDTO {
-
-    private String maNgua;
-    private String tenNgua;
-    private String giongNgua;
-    private LocalDate ngaySinh;
-    private String gioiTinh;
-    private String mauLong;
-    private Double troiLuong;
-    private String trangThaiSucKhoe;
-    private String trangThai;
-    private String maChuNgua;
-    private String tenChuNgua;
-    private LocalDateTime ngayTao;
-    private LocalDateTime ngayCapNhat;
+public class NguaResponseDTO {
+    private String id;
+    private String code;
+    private String name;
+    private String breed;
+    private LocalDate dateOfBirth;
+    private Gender gender;
+    private String color;
+    private Double weight;
+    private String avatarUrl;
+    private String passportUrl;
+    private String healthCertUrl;
+    private HorseStatus status;
+    private String ownerId;
+    private String ownerName;
+    private LocalDateTime createdAt;
 }

@@ -9,37 +9,40 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * Schedule Entity - Represents race schedules/events
+ * Horse Entity - Represents racing horses
  */
 @Entity
-@Table(name = "schedules")
+@Table(name = "horses")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Schedule {
+public class Horse {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(nullable = false, length = 200)
+    @Column(nullable = false, length = 100)
     private String name;
     
-    @Column(name = "race_date", nullable = false)
-    private LocalDateTime raceDate;
+    @Column(nullable = false, length = 50)
+    private String breed;
+    
+    @Column(nullable = false)
+    private Integer age;
+    
+    @Column(nullable = false)
+    private Double speed;
     
     @Column(length = 100)
-    private String venue;
-    
-    @Column(name = "horse_count")
-    private Integer horseCount;
-    
-    @Column(length = 50)
-    private String prize;
+    private String owner;
     
     @Column(length = 50)
     private String status;
+    
+    @Column(length = 500)
+    private String notes;
     
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
