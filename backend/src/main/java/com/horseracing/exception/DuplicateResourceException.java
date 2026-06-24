@@ -1,12 +1,8 @@
 package com.horseracing.exception;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.ResponseStatus;
-
 /**
- * Ném ra khi dữ liệu bị trùng lặp (số giấy phép jockey, tên ngựa...)
+ * Ném ra khi dữ liệu bị trùng lặp (vi phạm unique: username, email, số giấy phép...).
  */
-@ResponseStatus(HttpStatus.CONFLICT)
 public class DuplicateResourceException extends RuntimeException {
 
     public DuplicateResourceException(String message) {

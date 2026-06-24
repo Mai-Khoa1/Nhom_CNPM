@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 /**
- * Repository cho entity NhatKyHoatDong (Audit Log)
+ * Repository cho entity NhatKyHoatDong (Audit Log).
  */
 @Repository
 public interface NhatKyHoatDongRepository extends JpaRepository<NhatKyHoatDong, String> {
@@ -17,4 +17,6 @@ public interface NhatKyHoatDongRepository extends JpaRepository<NhatKyHoatDong, 
     List<NhatKyHoatDong> findByLoaiHanhDongOrderByThoiGianDesc(String loaiHanhDong);
 
     List<NhatKyHoatDong> findByDoiTuongTacDongContainingIgnoreCaseOrderByThoiGianDesc(String doiTuong);
+
+    List<NhatKyHoatDong> findAllByOrderByThoiGianDesc();
 }

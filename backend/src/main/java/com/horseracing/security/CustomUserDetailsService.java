@@ -1,49 +1,39 @@
 package com.horseracing.security;
 
+import com.horseracing.dto.common.RoleMapper;
 import com.horseracing.entity.User;
 import com.horseracing.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.GrantedAuthority;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 
 /**
- * Custom UserDetailsService implementation for loading user by email
+ * Tải thông tin người dùng theo tenDangNhap (username) để Spring Security xác thực.
  */
 @Service
+@RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
-    
-    @Autowired
-    private UserRepository userRepository;
-    
+
+    private final UserRepository userRepository;
+
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
-        
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        User user = userRepository.findByTenDangNhap(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy tài khoản: " + username));
+
+        boolean enabled = !User.TRANG_THAI_BI_KHOA.equals(user.getTrangThai());
+
         return new org.springframework.security.core.userdetails.User(
-                user.getEmail(),
-                user.getPassword(),
-                getAuthorities(user)
+                user.getTenDangNhap(),
+                user.getMatKhau(),
+                enabled,
+                true, true, true,
+                List.of(new SimpleGrantedAuthority(RoleMapper.toAuthority(RoleMapper.toRole(user.getVaiTro()))))
         );
-    }
-    
-    /**
-     * Get authorities based on user role
-     */
-    private Collection<? extends GrantedAuthority> getAuthorities(User user) {
-        Collection<GrantedAuthority> authorities = new ArrayList<>();
-        if (user.getRole() != null) {
-            authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
-        } else {
-            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
-        }
-        return authorities;
     }
 }

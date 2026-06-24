@@ -1,63 +1,60 @@
 package com.horseracing.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 /**
- * Result Entity - Represents race results
+ * Entity Result (kết quả thi đấu) - Ánh xạ bảng KetQuaThiDua trong CSDL.
+ * Tên class giữ "Result" theo yêu cầu hệ thống, bảng vật lý là KetQuaThiDua.
  */
 @Entity
-@Table(name = "results")
+@Table(name = "KetQuaThiDau")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class Result {
-    
+
+    public static final String TRANG_THAI_CHUA_CONG_BO = "Chưa công bố";
+    public static final String TRANG_THAI_DA_CONG_BO = "Đã công bố";
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Column(nullable = false, length = 200)
-    private String raceName;
-    
-    @Column(nullable = false)
-    private LocalDateTime raceDate;
-    
-    @Column(length = 100)
-    private String venue;
-    
-    @Column(length = 100)
-    private String winner;
-    
-    @Column(length = 100)
-    private String jockey;
-    
-    @Column(length = 50)
-    private String time;
-    
-    @Column(length = 50)
-    private String prize;
-    
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-    
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-    
+    @Column(name = "maKetQua", length = 50)
+    private String maKetQua;
+
+    @Column(name = "maChangDua", nullable = false, length = 50)
+    private String maChangDua;
+
+    @Column(name = "maNgua", nullable = false, length = 50)
+    private String maNgua;
+
+    @Column(name = "hang", nullable = false)
+    private Integer hang;
+
+    @Column(name = "thoiGianHoanThanh", length = 50)
+    private String thoiGianHoanThanh;
+
+    @Column(name = "diem")
+    private Double diem;
+
+    @Column(name = "ghiChuChuyenMon", columnDefinition = "TEXT")
+    private String ghiChuChuyenMon;
+
+    @Column(name = "trangThaiCongBo", length = 50)
+    private String trangThaiCongBo;
+
+    @Column(name = "ngayCongBo")
+    private LocalDateTime ngayCongBo;
+
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-    
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        if (diem == null) {
+            diem = 0.0;
+        }
+        if (trangThaiCongBo == null) {
+            trangThaiCongBo = TRANG_THAI_CHUA_CONG_BO;
+        }
     }
 }

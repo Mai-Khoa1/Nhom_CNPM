@@ -6,8 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * Entity NhatKyHoatDong - Audit log cho các thao tác quan trọng
- * Dùng cho JockeyService.writeAuditLog() theo sơ đồ tuần tự
+ * Entity NhatKyHoatDong - Audit log cho các thao tác quan trọng trong hệ thống.
  */
 @Entity
 @Table(name = "NhatKyHoatDong")
