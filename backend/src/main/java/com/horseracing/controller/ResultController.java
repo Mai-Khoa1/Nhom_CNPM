@@ -1,47 +1,54 @@
 package com.horseracing.controller;
-import com.horseracing.entity.Result;
+
+import com.horseracing.dto.common.ApiResponse;
+import com.horseracing.dto.result.ResultEntryRequestDTO;
+import com.horseracing.dto.result.ResultResponseDTO;
+import com.horseracing.service.CurrentUserService;
 import com.horseracing.service.ResultService;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import java.util.List;
+
 /**
-* Race Results Management Controller
-*/
+ * ResultController - quản lý kết quả thi đấu theo chặng đua. Base path /results khớp frontend.
+ */
 @RestController
 @RequestMapping("/results")
+@RequiredArgsConstructor
+@Tag(name = "Kết quả thi đấu", description = "API ghi nhận và công bố kết quả thi đấu theo chặng đua")
 public class ResultController {
-    @Autowired
-    private ResultService resultService;
 
-    @GetMapping
-    public ResponseEntity<List<Result>> getAllResults() {
-        return ResponseEntity.ok(resultService.getAllResults());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<Result> getResultById(@PathVariable Long id) {
-        return resultService.getResultById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
+    private final ResultService resultService;
+    private final CurrentUserService currentUserService;
 
     @PostMapping
-    public ResponseEntity<Result> createResult(@RequestBody Result result) {
-        Result created = resultService.createResult(result);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    public ResponseEntity<ApiResponse<ResultResponseDTO>> submitResults(
+            @Valid @RequestBody ResultEntryRequestDTO request, Authentication authentication) {
+        String staffId = currentUserService.resolveMaTK(authentication);
+        ResultResponseDTO result = resultService.submitResults(request, staffId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(result, "Ghi nhận kết quả thành công"));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Result> updateResult(@PathVariable Long id, @RequestBody Result result) {
-        Result updated = resultService.updateResult(id, result);
-        return ResponseEntity.ok(updated);
+    @GetMapping("/{raceId}")
+    public ResponseEntity<ApiResponse<ResultResponseDTO>> getResultsByRace(@PathVariable String raceId) {
+        return ResponseEntity.ok(ApiResponse.success(resultService.getResultsByRace(raceId)));
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteResult(@PathVariable Long id) {
-        resultService.deleteResult(id);
-        return ResponseEntity.noContent().build();
+    @PutMapping("/{raceId}")
+    public ResponseEntity<ApiResponse<ResultResponseDTO>> updateResults(
+            @PathVariable String raceId, @Valid @RequestBody ResultEntryRequestDTO request, Authentication authentication) {
+        request.setRaceId(raceId);
+        String staffId = currentUserService.resolveMaTK(authentication);
+        return ResponseEntity.ok(ApiResponse.success(resultService.submitResults(request, staffId), "Cập nhật kết quả thành công"));
+    }
+
+    @PatchMapping("/{raceId}/publish")
+    public ResponseEntity<ApiResponse<ResultResponseDTO>> publishResults(@PathVariable String raceId, Authentication authentication) {
+        String staffId = currentUserService.resolveMaTK(authentication);
+        return ResponseEntity.ok(ApiResponse.success(resultService.publishResults(raceId, staffId), "Đã công bố kết quả"));
     }
 }
