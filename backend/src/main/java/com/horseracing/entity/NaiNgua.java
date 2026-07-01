@@ -7,8 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * Entity NaiNgua (Jockey) - Ánh xạ bảng Jockey trong CSDL
- * Thay thế entity Jockey cũ để đồng bộ với schema.sql
+ * Entity NaiNgua (Jockey/nài ngựa) - Ánh xạ bảng Jockey trong CSDL.
  */
 @Entity
 @Table(name = "Jockey")
@@ -17,6 +16,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class NaiNgua {
+
+    public static final String TRANG_THAI_SAN_SANG = "Sẵn sàng";
+    public static final String TRANG_THAI_CHAN_THUONG = "Chấn thương";
+    public static final String TRANG_THAI_NGHI_HUU = "Nghỉ hưu";
 
     @Id
     @Column(name = "maNaiNgua", length = 50)
@@ -31,6 +34,10 @@ public class NaiNgua {
     @Column(name = "ngaySinh")
     private LocalDate ngaySinh;
 
+    @Column(name = "gioiTinh")
+    @Enumerated(EnumType.STRING)
+    private Ngua.GioiTinh gioiTinh;
+
     @Column(name = "quocTich", length = 50)
     private String quocTich;
 
@@ -43,7 +50,6 @@ public class NaiNgua {
     @Column(name = "trangThai", length = 50)
     private String trangThai;
 
-    // Các trường chỉ số sức khỏe (cập nhật bởi updateStats)
     @Column(name = "canNang")
     private Double canNang;
 
@@ -67,7 +73,7 @@ public class NaiNgua {
         ngayTao = LocalDateTime.now();
         ngayCapNhat = LocalDateTime.now();
         if (trangThai == null) {
-            trangThai = "Sẵn sàng";
+            trangThai = TRANG_THAI_SAN_SANG;
         }
     }
 

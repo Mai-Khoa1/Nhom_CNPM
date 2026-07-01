@@ -69,12 +69,12 @@ const MyHorsesPage = () => {
           <Link to={`/my-horses/${h.id}`}>
             <Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button>
           </Link>
-          {h.status === HorseStatus.PENDING && (
+          {(h.status === HorseStatus.PENDING || h.status === HorseStatus.REJECTED) && (
             <Link to={`/my-horses/${h.id}/edit`}>
               <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
             </Link>
           )}
-          {h.status === HorseStatus.PENDING && (
+          {(h.status === HorseStatus.PENDING || h.status === HorseStatus.REJECTED) && (
             <Button variant="ghost" size="icon" onClick={() => setDeleteId(h.id)}>
               <Trash2 className="h-4 w-4 text-red-500" />
             </Button>

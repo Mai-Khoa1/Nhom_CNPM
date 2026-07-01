@@ -134,6 +134,18 @@ public final class StatusMapper {
         };
     }
 
+    // ----- UpdateRequestStatus (YeuCauCapNhat.trangThai) -----
+
+    public static UpdateRequestStatus toUpdateRequestStatus(String trangThai) {
+        if (trangThai == null) return UpdateRequestStatus.PENDING;
+        return switch (trangThai) {
+            case "Chờ duyệt" -> UpdateRequestStatus.PENDING;
+            case "Đã duyệt" -> UpdateRequestStatus.APPROVED;
+            case "Từ chối" -> UpdateRequestStatus.REJECTED;
+            default -> throw new IllegalArgumentException("Trạng thái yêu cầu cập nhật không hợp lệ: " + trangThai);
+        };
+    }
+
     // ----- NotificationStatus (ThongBao.trangThai: Chưa đọc/Đã đọc) -----
 
     public static boolean isRead(String trangThai) {

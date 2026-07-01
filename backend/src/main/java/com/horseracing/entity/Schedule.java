@@ -8,8 +8,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 /**
- * Entity Schedule (lịch đua / chặng đua) - Ánh xạ bảng ChangDua trong CSDL.
- * Tên class giữ "Schedule" theo yêu cầu hệ thống, bảng vật lý là ChangDua.
+ * Entity Schedule (ChangDua/Race) - Ánh xạ bảng ChangDua trong CSDL.
  */
 @Entity
 @Table(name = "ChangDua")
@@ -19,14 +18,14 @@ import java.time.LocalTime;
 @Builder
 public class Schedule {
 
+    /** Mã mùa giải mặc định, dùng khi tạo chặng đua không chỉ định mùa giải cụ thể. */
+    public static final String MA_MUA_GIAI_DEFAULT = "MG_DEFAULT";
+
     public static final String TRANG_THAI_MO_DANG_KY = "Mở đăng ký";
     public static final String TRANG_THAI_DA_DONG_DANG_KY = "Đã đóng đăng ký";
     public static final String TRANG_THAI_DANG_DUA = "Đang đua";
     public static final String TRANG_THAI_HOAN_THANH = "Hoàn thành";
     public static final String TRANG_THAI_DA_HUY = "Đã hủy";
-
-    /** Mùa giải mặc định dùng khi không chỉ định maMuaGiai. */
-    public static final String MA_MUA_GIAI_DEFAULT = "MG_DEFAULT";
 
     @Id
     @Column(name = "maChangDua", length = 50)
@@ -70,12 +69,6 @@ public class Schedule {
 
     @PrePersist
     protected void onCreate() {
-        if (maMuaGiai == null || maMuaGiai.isBlank()) {
-            maMuaGiai = MA_MUA_GIAI_DEFAULT;
-        }
-        if (soLanDua == null) {
-            soLanDua = 1;
-        }
         if (trangThai == null) {
             trangThai = TRANG_THAI_MO_DANG_KY;
         }

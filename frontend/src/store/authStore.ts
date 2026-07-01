@@ -44,7 +44,7 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: null,
           isAuthenticated: false,
         });
-        window.location.href = '/login';
+        window.location.href = '/';
       },
 
       setUser: (user) => set({ user, role: user.role }),

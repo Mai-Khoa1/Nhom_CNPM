@@ -14,12 +14,12 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * ResultController - quản lý kết quả thi đấu theo chặng đua. Base path /results khớp frontend.
+ * ResultController - quản lý kết quả thi đấu (bảng KetQuaThiDau). Base path /results khớp frontend.
  */
 @RestController
 @RequestMapping("/results")
 @RequiredArgsConstructor
-@Tag(name = "Kết quả thi đấu", description = "API ghi nhận và công bố kết quả thi đấu theo chặng đua")
+@Tag(name = "Kết quả thi đấu", description = "API ghi nhận, cập nhật và công bố kết quả thi đấu")
 public class ResultController {
 
     private final ResultService resultService;
@@ -27,10 +27,10 @@ public class ResultController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<ResultResponseDTO>> submitResults(
-            @Valid @RequestBody ResultEntryRequestDTO request, Authentication authentication) {
+            @Valid @RequestBody ResultEntryRequestDTO dto, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
-        ResultResponseDTO result = resultService.submitResults(request, staffId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(result, "Ghi nhận kết quả thành công"));
+        ResultResponseDTO created = resultService.submitResults(dto, staffId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(created, "Ghi nhận kết quả thành công"));
     }
 
     @GetMapping("/{raceId}")
@@ -40,14 +40,15 @@ public class ResultController {
 
     @PutMapping("/{raceId}")
     public ResponseEntity<ApiResponse<ResultResponseDTO>> updateResults(
-            @PathVariable String raceId, @Valid @RequestBody ResultEntryRequestDTO request, Authentication authentication) {
-        request.setRaceId(raceId);
+            @PathVariable String raceId, @Valid @RequestBody ResultEntryRequestDTO dto, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
-        return ResponseEntity.ok(ApiResponse.success(resultService.submitResults(request, staffId), "Cập nhật kết quả thành công"));
+        dto.setRaceId(raceId);
+        return ResponseEntity.ok(ApiResponse.success(resultService.submitResults(dto, staffId), "Cập nhật kết quả thành công"));
     }
 
     @PatchMapping("/{raceId}/publish")
-    public ResponseEntity<ApiResponse<ResultResponseDTO>> publishResults(@PathVariable String raceId, Authentication authentication) {
+    public ResponseEntity<ApiResponse<ResultResponseDTO>> publishResults(
+            @PathVariable String raceId, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
         return ResponseEntity.ok(ApiResponse.success(resultService.publishResults(raceId, staffId), "Đã công bố kết quả"));
     }

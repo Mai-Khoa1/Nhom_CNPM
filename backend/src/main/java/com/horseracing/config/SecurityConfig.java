@@ -94,6 +94,9 @@ public class SecurityConfig {
                         .requestMatchers("/users/me").authenticated()
                         .requestMatchers("/users/**").hasRole("ADMIN")
 
+                        // Thống kê công khai (dùng cho trang chủ)
+                        .requestMatchers(HttpMethod.GET, "/dashboard/stats", "/dashboard/upcoming").permitAll()
+
                         // Nhật ký hoạt động, dashboard - Admin và Ban tổ chức
                         .requestMatchers("/nhat-ky-hoat-dong/**").hasAnyRole("ADMIN", "ORGANIZER")
                         .requestMatchers("/dashboard/**").hasAnyRole("ADMIN", "ORGANIZER")
@@ -116,7 +119,7 @@ public class SecurityConfig {
                             .hasAnyRole("ORGANIZER", "ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/seasons/**", "/races/**", "/results/**")
                             .hasAnyRole("ORGANIZER", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/races/**", "/lanes/**")
+                        .requestMatchers(HttpMethod.DELETE, "/seasons/**", "/races/**", "/lanes/**")
                             .hasAnyRole("ORGANIZER", "ADMIN")
 
                         // Đăng ký thi đấu - tạo bởi Chủ ngựa, duyệt/từ chối bởi Ban tổ chức/Admin
@@ -124,6 +127,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/registrations/**").hasAnyRole("ORGANIZER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/registrations/**").hasRole("HORSE_OWNER")
                         .requestMatchers(HttpMethod.PATCH, "/registrations/**").hasAnyRole("ORGANIZER", "ADMIN")
+
+                        // Yêu cầu cập nhật thông tin ngựa/nài - chỉ Ban tổ chức/Admin xem và duyệt/từ chối
+                        .requestMatchers("/update-requests/**").hasAnyRole("ORGANIZER", "ADMIN")
 
                         // Thông báo, upload file - mọi người dùng đã đăng nhập (tự xem của mình)
                         .requestMatchers("/notifications/**").authenticated()

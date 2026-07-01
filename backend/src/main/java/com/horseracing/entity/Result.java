@@ -6,8 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * Entity Result (kết quả thi đấu) - Ánh xạ bảng KetQuaThiDua trong CSDL.
- * Tên class giữ "Result" theo yêu cầu hệ thống, bảng vật lý là KetQuaThiDua.
+ * Entity Result (KetQuaThiDau) - Ánh xạ bảng KetQuaThiDau trong CSDL.
  */
 @Entity
 @Table(name = "KetQuaThiDau")
@@ -50,9 +49,6 @@ public class Result {
 
     @PrePersist
     protected void onCreate() {
-        if (diem == null) {
-            diem = 0.0;
-        }
         if (trangThaiCongBo == null) {
             trangThaiCongBo = TRANG_THAI_CHUA_CONG_BO;
         }

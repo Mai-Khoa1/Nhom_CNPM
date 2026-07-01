@@ -1,23 +1,19 @@
 package com.horseracing.dto.chungua;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
-/**
- * DTO trả về thông tin chủ ngựa cho client
- */
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class ChuNguaResponseDTO {
-
     private String maChuNgua;
     private String maTK;
     private String hoTen;
     private String diaChi;
     private String soDienThoai;
     private String email;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

@@ -6,10 +6,12 @@ import com.horseracing.dto.auth.RegisterRequest;
 import com.horseracing.dto.auth.TokenRefreshResponse;
 import com.horseracing.dto.user.UserMapper;
 import com.horseracing.dto.user.UserResponseDTO;
+import com.horseracing.entity.ChuNgua;
 import com.horseracing.entity.RefreshToken;
 import com.horseracing.entity.User;
 import com.horseracing.exception.DuplicateResourceException;
 import com.horseracing.exception.ResourceNotFoundException;
+import com.horseracing.repository.ChuNguaRepository;
 import com.horseracing.repository.RefreshTokenRepository;
 import com.horseracing.repository.UserRepository;
 import com.horseracing.security.JwtService;
@@ -36,6 +38,7 @@ import java.util.UUID;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final ChuNguaRepository chuNguaRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
@@ -61,12 +64,22 @@ public class AuthService {
                 .hoTen(request.getFullName())
                 .email(request.getEmail())
                 .soDienThoai(request.getPhone())
-                .vaiTro(User.VAI_TRO_NGUOI_XEM)
+                .vaiTro(User.VAI_TRO_CHU_NGUA)
                 .build();
 
         User saved = userRepository.save(user);
         nhatKyHoatDongService.writeAuditLog(saved.getMaTK(), "REGISTER", "User:" + saved.getMaTK(),
                 "Đăng ký tài khoản mới: " + saved.getTenDangNhap());
+
+        // Mọi tài khoản tự đăng ký đều là Chủ ngựa -> tạo sẵn hồ sơ ChuNgua để có thể thêm ngựa/jockey ngay
+        ChuNgua chuNgua = ChuNgua.builder()
+                .maChuNgua("CN" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase())
+                .maTK(saved.getMaTK())
+                .hoTen(saved.getHoTen())
+                .soDienThoai(saved.getSoDienThoai())
+                .email(saved.getEmail())
+                .build();
+        chuNguaRepository.save(chuNgua);
 
         return UserMapper.toResponseDTO(saved);
     }

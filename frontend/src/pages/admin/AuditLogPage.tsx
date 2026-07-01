@@ -1,39 +1,48 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { auditApi } from '@/api/auditApi';
-import { queryKeys } from '@/constants/queryKeys';
 import { AuditLogResponse } from '@/types/audit';
-import { AuditAction } from '@/types/enums';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DataTable, Column } from '@/components/common/DataTable';
-import { PaginationControl } from '@/components/common/PaginationControl';
 import { formatDateTime } from '@/utils/formatDate';
 
+const ACTION_OPTIONS = [
+  'ALL',
+  'LOGIN', 'LOGOUT',
+  'CREATE_RACE', 'UPDATE_RACE', 'DELETE_RACE', 'PUBLISH_RACE', 'COMPLETE_RACE',
+  'CREATE_SEASON', 'UPDATE_SEASON', 'DELETE_SEASON',
+  'APPROVE_HORSE', 'REJECT_HORSE', 'DISQUALIFY_HORSE',
+  'APPROVE_JOCKEY', 'REJECT_JOCKEY',
+  'APPROVE_REGISTRATION', 'REJECT_REGISTRATION',
+  'SUBMIT_RESULTS', 'PUBLISH_RESULTS',
+  'ASSIGN_LANE', 'UPDATE_LANE', 'REMOVE_LANE',
+  'CREATE_USER', 'UPDATE_USER', 'DELETE_USER', 'LOCK_USER', 'UNLOCK_USER', 'CHANGE_ROLE',
+];
+
 const AuditLogPage = () => {
-  const [page, setPage] = useState(0);
   const [actionFilter, setActionFilter] = useState<string>('ALL');
 
-  const params = {
-    page,
-    size: 20,
-    action: actionFilter !== 'ALL' ? actionFilter as AuditAction : undefined,
-  };
-
   const { data, isLoading } = useQuery({
-    queryKey: queryKeys.auditLogs.list(params),
-    queryFn: () => auditApi.getAll(params),
+    queryKey: ['audit-logs', actionFilter],
+    queryFn: () => auditApi.getAll({ action: actionFilter !== 'ALL' ? actionFilter : undefined }),
   });
 
-  const logs = data?.data?.data?.content;
-  const pageInfo = data?.data?.data;
+  const logs: AuditLogResponse[] = data?.data?.data ?? [];
 
   const columns: Column<AuditLogResponse>[] = [
-    { key: 'createdAt', header: 'Thời gian', render: (l) => formatDateTime(l.createdAt) },
-    { key: 'username', header: 'Người dùng', render: (l) => l.username ?? '-' },
-    { key: 'action', header: 'Hành động', render: (l) => <span className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{l.action}</span> },
-    { key: 'targetType', header: 'Đối tượng', render: (l) => l.targetType ?? '-' },
-    { key: 'description', header: 'Mô tả', render: (l) => l.description ?? '-' },
-    { key: 'ipAddress', header: 'IP', render: (l) => l.ipAddress ?? '-' },
+    { key: 'thoiGian', header: 'Thời gian', render: (l) => formatDateTime(l.thoiGian) },
+    { key: 'maTK', header: 'Tài khoản', render: (l) => l.maTK ?? '-' },
+    {
+      key: 'loaiHanhDong', header: 'Hành động',
+      render: (l) => (
+        <span className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+          {l.loaiHanhDong}
+        </span>
+      ),
+    },
+    { key: 'doiTuongTacDong', header: 'Đối tượng', render: (l) => l.doiTuongTacDong ?? '-' },
+    { key: 'moTa', header: 'Mô tả', render: (l) => l.moTa ?? '-' },
+    { key: 'diaChiIP', header: 'IP', render: (l) => l.diaChiIP ?? '-' },
   ];
 
   return (
@@ -42,23 +51,18 @@ const AuditLogPage = () => {
 
       <div className="mb-4">
         <Select value={actionFilter} onValueChange={setActionFilter}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[240px]">
             <SelectValue placeholder="Lọc hành động" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="ALL">Tất cả</SelectItem>
-            {Object.values(AuditAction).map((a) => (
-              <SelectItem key={a} value={a}>{a}</SelectItem>
+            {ACTION_OPTIONS.map((a) => (
+              <SelectItem key={a} value={a}>{a === 'ALL' ? 'Tất cả' : a}</SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      <DataTable columns={columns} data={logs ?? []} isLoading={isLoading} />
-
-      {pageInfo && (
-        <PaginationControl page={pageInfo.page} totalPages={pageInfo.totalPages} totalElements={pageInfo.totalElements} onPageChange={setPage} />
-      )}
+      <DataTable columns={columns} data={logs} isLoading={isLoading} emptyMessage="Không có nhật ký nào" />
     </div>
   );
 };

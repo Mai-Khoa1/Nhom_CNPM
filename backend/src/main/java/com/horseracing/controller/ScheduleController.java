@@ -22,12 +22,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * ScheduleController - quản lý lịch đua / chặng đua (bảng ChangDua). Base path /races khớp frontend.
+ * ScheduleController - quản lý chặng đua (bảng ChangDua). Base path /races khớp frontend.
  */
 @RestController
 @RequestMapping("/races")
 @RequiredArgsConstructor
-@Tag(name = "Lịch đua", description = "API quản lý lịch đua / chặng đua")
+@Tag(name = "Quản lý Chặng đua", description = "API thêm, sửa, xóa, công bố chặng đua")
 public class ScheduleController {
 
     private final ScheduleService scheduleService;
@@ -60,7 +60,7 @@ public class ScheduleController {
     public ResponseEntity<ApiResponse<ScheduleResponseDTO>> updateRace(
             @PathVariable String id, @Valid @RequestBody ScheduleRequestDTO dto, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
-        return ResponseEntity.ok(ApiResponse.success(scheduleService.updateRace(id, dto, staffId)));
+        return ResponseEntity.ok(ApiResponse.success(scheduleService.updateRace(id, dto, staffId), "Cập nhật chặng đua thành công"));
     }
 
     @DeleteMapping("/{id}")
@@ -71,19 +71,20 @@ public class ScheduleController {
     }
 
     @PatchMapping("/{id}/publish")
-    public ResponseEntity<ApiResponse<ScheduleResponseDTO>> publishRace(@PathVariable String id, Authentication authentication) {
+    public ResponseEntity<ApiResponse<ScheduleResponseDTO>> publishRace(
+            @PathVariable String id, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
         return ResponseEntity.ok(ApiResponse.success(scheduleService.publishRace(id, staffId), "Đã công bố chặng đua"));
     }
 
     @GetMapping("/{id}/registrations")
-    public ResponseEntity<ApiResponse<PageResponse<RegistrationResponseDTO>>> getRaceRegistrations(
+    public ResponseEntity<ApiResponse<PageResponse<RegistrationResponseDTO>>> getRegistrations(
             @PathVariable String id, Pageable pageable) {
         return ResponseEntity.ok(ApiResponse.success(registrationService.getRegistrationsByRace(id, pageable)));
     }
 
     @GetMapping("/{id}/lanes")
-    public ResponseEntity<ApiResponse<List<LaneResponseDTO>>> getRaceLanes(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<List<LaneResponseDTO>>> getLanes(@PathVariable String id) {
         return ResponseEntity.ok(ApiResponse.success(registrationService.getLanesByRace(id)));
     }
 }

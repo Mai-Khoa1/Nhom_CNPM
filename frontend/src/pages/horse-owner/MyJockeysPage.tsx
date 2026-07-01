@@ -58,12 +58,12 @@ const MyJockeysPage = () => {
           <Link to={`/my-jockeys/${j.id}`}>
             <Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button>
           </Link>
-          {j.status === JockeyStatus.PENDING && (
+          {(j.status === JockeyStatus.PENDING || j.status === JockeyStatus.REJECTED) && (
             <Link to={`/my-jockeys/${j.id}/edit`}>
               <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
             </Link>
           )}
-          {j.status === JockeyStatus.PENDING && (
+          {(j.status === JockeyStatus.PENDING || j.status === JockeyStatus.REJECTED) && (
             <Button variant="ghost" size="icon" onClick={() => setDeleteId(j.id)}>
               <Trash2 className="h-4 w-4 text-red-500" />
             </Button>

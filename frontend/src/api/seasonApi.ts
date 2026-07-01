@@ -15,6 +15,9 @@ export const seasonApi = {
   update: (id: string, data: SeasonUpdateRequest) =>
     axiosInstance.put<ApiResponse<SeasonResponse>>(`/seasons/${id}`, data),
 
+  delete: (id: string) =>
+    axiosInstance.delete<ApiResponse<void>>(`/seasons/${id}`),
+
   close: (id: string) =>
     axiosInstance.patch<ApiResponse<void>>(`/seasons/${id}/close`),
 
