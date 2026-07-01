@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- * Entity ChuNgua - Ánh xạ bảng ChuNgua trong CSDL
+ * Entity ChuNgua - Ánh xạ bảng ChuNgua trong CSDL (thông tin mở rộng của chủ ngựa, 1-1 với TaiKhoan).
  */
 @Entity
 @Table(name = "ChuNgua")

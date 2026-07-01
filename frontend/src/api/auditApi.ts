@@ -1,16 +1,14 @@
 import { axiosInstance } from './axiosInstance';
-import { ApiResponse, PageResponse } from '@/types/common';
+import { ApiResponse } from '@/types/common';
 import { AuditLogResponse } from '@/types/audit';
-import { AuditAction } from '@/types/enums';
 
 export const auditApi = {
-  getAll: (params?: {
-    page?: number;
-    size?: number;
-    userId?: string;
-    action?: AuditAction;
-    targetType?: string;
-    fromDate?: string;
-    toDate?: string;
-  }) => axiosInstance.get<ApiResponse<PageResponse<AuditLogResponse>>>('/audit-logs', { params }),
+  getAll: (params?: { action?: string }) => {
+    if (params?.action) {
+      return axiosInstance.get<ApiResponse<AuditLogResponse[]>>(
+        `/nhat-ky-hoat-dong/action/${params.action}`
+      );
+    }
+    return axiosInstance.get<ApiResponse<AuditLogResponse[]>>('/nhat-ky-hoat-dong');
+  },
 };

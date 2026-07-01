@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 /**
- * Repository cho entity ChuNgua
+ * Repository cho entity ChuNgua.
  */
 @Repository
 public interface ChuNguaRepository extends JpaRepository<ChuNgua, String> {

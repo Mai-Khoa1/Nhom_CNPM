@@ -115,11 +115,22 @@ public class ScheduleService {
         Schedule schedule = scheduleRepository.findById(maChangDua)
                 .orElseThrow(() -> new ResourceNotFoundException("Chặng đua", "id", maChangDua));
 
-        schedule.setTrangThai(StatusMapper.toTrangThaiChangDua(RaceStatus.ONGOING));
+        RaceStatus currentStatus = StatusMapper.toRaceStatus(schedule.getTrangThai());
+        RaceStatus nextStatus;
+        String action;
+        if (currentStatus == RaceStatus.ONGOING) {
+            nextStatus = RaceStatus.COMPLETED;
+            action = "COMPLETE_RACE";
+        } else {
+            nextStatus = RaceStatus.ONGOING;
+            action = "PUBLISH_RACE";
+        }
+
+        schedule.setTrangThai(StatusMapper.toTrangThaiChangDua(nextStatus));
         Schedule updated = scheduleRepository.save(schedule);
 
-        nhatKyHoatDongService.writeAuditLog(staffId, "PUBLISH_RACE", "Race:" + maChangDua,
-                "Công bố/mở chặng đua: " + updated.getTenChangDua());
+        nhatKyHoatDongService.writeAuditLog(staffId, action, "Race:" + maChangDua,
+                "Cập nhật trạng thái chặng đua: " + updated.getTenChangDua() + " → " + nextStatus);
 
         MuaGiai muaGiai = muaGiaiRepository.findById(updated.getMaMuaGiai()).orElse(null);
         return mapToResponseDTO(updated, muaGiai);
@@ -179,10 +190,19 @@ public class ScheduleService {
 
     private LocalDateTime parseDateTime(String dateTimeStr) {
         if (dateTimeStr == null || dateTimeStr.isBlank()) return null;
+        // Thử ISO full format "2026-06-25T14:00:00"
         try {
             return LocalDateTime.parse(dateTimeStr);
-        } catch (Exception e) {
+        } catch (Exception ignored) {}
+        // Thử format datetime-local của HTML "2026-06-25T14:00" (không có giây)
+        try {
+            return LocalDateTime.parse(dateTimeStr,
+                    java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm"));
+        } catch (Exception ignored) {}
+        // Thử date-only "2026-06-25"
+        try {
             return LocalDate.parse(dateTimeStr).atStartOfDay();
-        }
+        } catch (Exception ignored) {}
+        return null;
     }
 }

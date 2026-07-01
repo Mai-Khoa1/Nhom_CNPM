@@ -220,6 +220,23 @@ CREATE TABLE IF NOT EXISTS TepTin (
     ngayTao DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Bảng YeuCauCapNhat - lưu yêu cầu chủ ngựa sửa thông tin Ngựa/Nài đã được duyệt trước đó,
+-- chờ Ban tổ chức duyệt lại. Dữ liệu cũ/mới lưu dạng JSON để hiển thị so sánh; dữ liệu gốc
+-- trong bảng Ngua/Jockey chỉ bị ghi đè khi yêu cầu được DUYỆT.
+CREATE TABLE IF NOT EXISTS YeuCauCapNhat (
+    maYeuCau VARCHAR(50) PRIMARY KEY,
+    loaiDoiTuong ENUM('NGUA', 'NAI_NGUA') NOT NULL,
+    maDoiTuong VARCHAR(50) NOT NULL COMMENT 'maNgua hoặc maNaiNgua tương ứng',
+    maTK VARCHAR(50) NOT NULL COMMENT 'Tài khoản chủ ngựa gửi yêu cầu',
+    duLieuCu TEXT NOT NULL COMMENT 'Snapshot JSON dữ liệu trước khi sửa',
+    duLieuMoi TEXT NOT NULL COMMENT 'Snapshot JSON dữ liệu đề xuất sửa',
+    trangThai ENUM('Chờ duyệt', 'Đã duyệt', 'Từ chối') DEFAULT 'Chờ duyệt',
+    lyDoTuChoi VARCHAR(255),
+    ngayTao DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ngayXuLy DATETIME,
+    FOREIGN KEY (maTK) REFERENCES TaiKhoan(maTK) ON DELETE CASCADE
+);
+
 -- Các Index tối ưu hóa truy vấn
 CREATE INDEX idx_ngua_ten ON Ngua(tenNgua);
 CREATE INDEX idx_jockey_ten ON Jockey(hoTen);

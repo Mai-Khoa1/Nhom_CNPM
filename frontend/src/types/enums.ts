@@ -50,6 +50,17 @@ export enum RegistrationStatus {
   REJECTED = 'REJECTED',
 }
 
+export enum UpdateRequestStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
+export enum UpdateTargetType {
+  HORSE = 'HORSE',
+  JOCKEY = 'JOCKEY',
+}
+
 export enum DopingResult {
   PASS = 'PASS',
   FAIL = 'FAIL',

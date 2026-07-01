@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { formatDateTime } from '@/utils/formatDate';
 import { toast } from 'sonner';
 import { Loader2, ArrowLeft } from 'lucide-react';
 
@@ -80,7 +81,7 @@ const RegistrationCreatePage = () => {
                 <SelectContent>
                   {races.map((race) => (
                     <SelectItem key={race.id} value={race.id}>
-                      {race.name} - {race.location} ({race.raceDate})
+                      {race.name} — {race.location} ({race.raceDate ? formatDateTime(race.raceDate) : '?'})
                     </SelectItem>
                   ))}
                 </SelectContent>

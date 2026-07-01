@@ -9,9 +9,11 @@ import com.horseracing.dto.season.SeasonRequestDTO;
 import com.horseracing.dto.season.SeasonResponseDTO;
 import com.horseracing.entity.LuatDiem;
 import com.horseracing.entity.MuaGiai;
+import com.horseracing.exception.ResourceInUseException;
 import com.horseracing.exception.ResourceNotFoundException;
 import com.horseracing.repository.LuatDiemRepository;
 import com.horseracing.repository.MuaGiaiRepository;
+import com.horseracing.repository.ScheduleRepository;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -35,6 +37,7 @@ public class MuaGiaiService {
 
     private final MuaGiaiRepository muaGiaiRepository;
     private final LuatDiemRepository luatDiemRepository;
+    private final ScheduleRepository scheduleRepository;
     private final NhatKyHoatDongService nhatKyHoatDongService;
 
     public SeasonResponseDTO createSeason(SeasonRequestDTO dto, String staffId) {
@@ -67,6 +70,22 @@ public class MuaGiaiService {
                 "Cập nhật mùa giải: " + updated.getTenMuaGiai());
 
         return mapToResponseDTO(updated);
+    }
+
+    public void deleteSeason(String maMuaGiai, String staffId) {
+        MuaGiai muaGiai = muaGiaiRepository.findById(maMuaGiai)
+                .orElseThrow(() -> new ResourceNotFoundException("Mùa giải", "id", maMuaGiai));
+
+        if (scheduleRepository.countByMaMuaGiai(maMuaGiai) > 0) {
+            throw new ResourceInUseException(
+                    "Không thể xóa mùa giải '" + muaGiai.getTenMuaGiai() + "' vì đã có chặng đua thuộc mùa giải này.");
+        }
+
+        luatDiemRepository.deleteByMaMuaGiai(maMuaGiai);
+        muaGiaiRepository.delete(muaGiai);
+
+        nhatKyHoatDongService.writeAuditLog(staffId, "DELETE_SEASON", "Season:" + maMuaGiai,
+                "Đã xóa mùa giải: " + muaGiai.getTenMuaGiai());
     }
 
     public void closeSeason(String maMuaGiai, String staffId) {

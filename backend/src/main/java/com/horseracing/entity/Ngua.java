@@ -7,8 +7,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * Entity Ngua - Ánh xạ bảng Ngua trong CSDL
- * Thay thế entity Horse cũ để đồng bộ với schema.sql
+ * Entity Ngua - Ánh xạ bảng Ngua trong CSDL (ngựa đua).
  */
 @Entity
 @Table(name = "Ngua")
@@ -17,6 +16,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class Ngua {
+
+    public static final String TRANG_THAI_DU_DIEU_KIEN = "Đủ điều kiện";
+    public static final String TRANG_THAI_CHO_DUYET = "Chờ duyệt";
+    public static final String TRANG_THAI_CHAN_THUONG = "Chấn thương";
+    public static final String TRANG_THAI_BI_LOAI = "Bị loại";
 
     @Id
     @Column(name = "maNgua", length = 50)
@@ -61,7 +65,7 @@ public class Ngua {
         ngayTao = LocalDateTime.now();
         ngayCapNhat = LocalDateTime.now();
         if (trangThai == null) {
-            trangThai = "Chờ duyệt";
+            trangThai = TRANG_THAI_CHO_DUYET;
         }
     }
 

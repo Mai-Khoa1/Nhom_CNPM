@@ -42,12 +42,19 @@ export const queryKeys = {
     byRace: (raceId: string) => ['results', 'race', raceId] as const,
   },
 
+  updateRequests: {
+    all: ['update-requests'] as const,
+    list: (params: object) => ['update-requests', 'list', params] as const,
+    detail: (id: string) => ['update-requests', id] as const,
+  },
+
   rankings: {
     horses: (params: object) => ['rankings', 'horses', params] as const,
     jockeys: (params: object) => ['rankings', 'jockeys', params] as const,
   },
 
   notifications: {
+    all: ['notifications'] as const,
     list: (params: object) => ['notifications', 'list', params] as const,
     unreadCount: ['notifications', 'unread-count'] as const,
   },

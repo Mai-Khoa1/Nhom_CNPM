@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Trophy, Flag, Layers, ClipboardList,
   Medal, Bell, FileText, Users, Shield, ScrollText, Settings,
   Sun, Moon, LogOut, Menu, ChevronLeft,
+  PawPrint, UserCheck, ClipboardCheck,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -22,6 +23,9 @@ const AdminLayout = () => {
     { path: '/admin/seasons', label: 'Mùa giải', icon: Trophy },
     { path: '/admin/races', label: 'Cuộc đua', icon: Flag },
     { path: '/admin/lanes', label: 'Làn đua', icon: Layers },
+    { path: '/admin/horses', label: 'Quản lý Ngựa', icon: PawPrint },
+    { path: '/admin/jockeys', label: 'Quản lý Nài ngựa', icon: UserCheck },
+    { path: '/admin/update-requests', label: 'Duyệt cập nhật', icon: ClipboardCheck },
     { path: '/admin/registrations', label: 'Đăng ký', icon: ClipboardList },
     { path: '/admin/results', label: 'Kết quả', icon: Medal },
     { path: '/admin/notifications', label: 'Thông báo', icon: Bell },

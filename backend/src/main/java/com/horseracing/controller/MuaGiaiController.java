@@ -60,6 +60,13 @@ public class MuaGiaiController {
         return ResponseEntity.ok(ApiResponse.success(muaGiaiService.updateSeason(id, dto, staffId)));
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteSeason(@PathVariable String id, Authentication authentication) {
+        String staffId = currentUserService.resolveMaTK(authentication);
+        muaGiaiService.deleteSeason(id, staffId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Đã xóa mùa giải"));
+    }
+
     @PatchMapping("/{id}/close")
     public ResponseEntity<ApiResponse<Void>> closeSeason(@PathVariable String id, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);

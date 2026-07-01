@@ -43,6 +43,9 @@ import DashboardPage from '@/pages/admin/DashboardPage';
 import SeasonManagementPage from '@/pages/admin/SeasonManagementPage';
 import RaceManagementPage from '@/pages/admin/RaceManagementPage';
 import LaneManagementPage from '@/pages/admin/LaneManagementPage';
+import HorseManagementPage from '@/pages/admin/HorseManagementPage';
+import JockeyManagementPage from '@/pages/admin/JockeyManagementPage';
+import UpdateRequestManagementPage from '@/pages/admin/UpdateRequestManagementPage';
 import RegistrationManagementPage from '@/pages/admin/RegistrationManagementPage';
 import ResultManagementPage from '@/pages/admin/ResultManagementPage';
 import AdminNotificationsPage from '@/pages/admin/AdminNotificationsPage';
@@ -109,6 +112,9 @@ function App() {
               <Route path="/admin/seasons" element={<SeasonManagementPage />} />
               <Route path="/admin/races" element={<RaceManagementPage />} />
               <Route path="/admin/lanes" element={<LaneManagementPage />} />
+              <Route path="/admin/horses" element={<HorseManagementPage />} />
+              <Route path="/admin/jockeys" element={<JockeyManagementPage />} />
+              <Route path="/admin/update-requests" element={<UpdateRequestManagementPage />} />
               <Route path="/admin/registrations" element={<RegistrationManagementPage />} />
               <Route path="/admin/results" element={<ResultManagementPage />} />
               <Route path="/admin/notifications" element={<AdminNotificationsPage />} />

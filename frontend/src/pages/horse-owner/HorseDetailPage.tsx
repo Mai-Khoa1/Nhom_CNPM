@@ -1,18 +1,24 @@
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { horseApi } from '@/api/horseApi';
 import { queryKeys } from '@/constants/queryKeys';
 import { HorseStatus } from '@/types/enums';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/common/StatusBadge';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { getHorseStatusColor } from '@/utils/getStatusColor';
 import { formatDate } from '@/utils/formatDate';
-import { ArrowLeft, Edit, Loader2 } from 'lucide-react';
+import { handleApiError } from '@/utils/apiHelpers';
+import { ArrowLeft, Edit, Trash2, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const HorseDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.horses.detail(id ?? ''),
@@ -21,6 +27,16 @@ const HorseDetailPage = () => {
   });
 
   const horse = data?.data?.data;
+
+  const deleteMutation = useMutation({
+    mutationFn: () => horseApi.delete(id ?? ''),
+    onSuccess: () => {
+      toast.success('Đã xóa ngựa');
+      queryClient.invalidateQueries({ queryKey: queryKeys.horses.all });
+      navigate('/my-horses');
+    },
+    onError: (error) => toast.error(handleApiError(error)),
+  });
 
   if (isLoading) {
     return (
@@ -41,19 +57,30 @@ const HorseDetailPage = () => {
     );
   }
 
+  const canEdit = horse.status !== HorseStatus.DISQUALIFIED;
+  const canDelete = horse.status === HorseStatus.PENDING || horse.status === HorseStatus.REJECTED;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <Button variant="ghost" onClick={() => navigate('/my-horses')}>
           <ArrowLeft className="h-4 w-4 mr-2" />Quay lại
         </Button>
-        {horse.status === HorseStatus.PENDING && (
-          <Link to={`/my-horses/${horse.id}/edit`}>
-            <Button className="bg-[#D4A017] hover:bg-[#C8940A] text-white">
-              <Edit className="h-4 w-4 mr-2" />Chỉnh sửa
+        <div className="flex gap-2">
+          {canEdit && (
+            <Link to={`/my-horses/${horse.id}/edit`}>
+              <Button className="bg-[#D4A017] hover:bg-[#C8940A] text-white">
+                <Edit className="h-4 w-4 mr-2" />
+                {horse.status === HorseStatus.APPROVED ? 'Yêu cầu cập nhật' : 'Chỉnh sửa'}
+              </Button>
+            </Link>
+          )}
+          {canDelete && (
+            <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+              <Trash2 className="h-4 w-4 mr-2" />Xóa
             </Button>
-          </Link>
-        )}
+          )}
+        </div>
       </div>
 
       <Card>
@@ -104,6 +131,16 @@ const HorseDetailPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Xóa ngựa"
+        description="Bạn có chắc muốn xóa ngựa này? Hành động không thể hoàn tác."
+        onConfirm={() => deleteMutation.mutate()}
+        variant="destructive"
+        confirmText="Xóa"
+      />
     </div>
   );
 };

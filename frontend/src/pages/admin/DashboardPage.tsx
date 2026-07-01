@@ -3,6 +3,9 @@ import { dashboardApi } from '@/api/dashboardApi';
 import { queryKeys } from '@/constants/queryKeys';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { StatusBadge } from '@/components/common/StatusBadge';
+import { getRaceStatusColor } from '@/utils/getStatusColor';
+import { formatDateTime } from '@/utils/formatDate';
 import { Trophy, Flag, Users, ClipboardList, AlertCircle } from 'lucide-react';
 
 const DashboardPage = () => {
@@ -11,7 +14,13 @@ const DashboardPage = () => {
     queryFn: () => dashboardApi.getStats(),
   });
 
+  const { data: upcomingData, isLoading: upcomingLoading } = useQuery({
+    queryKey: ['dashboard', 'upcoming'],
+    queryFn: () => dashboardApi.getUpcoming(),
+  });
+
   const stats = data?.data?.data;
+  const upcomingRaces = upcomingData?.data?.data ?? [];
 
   if (isError) {
     return (
@@ -63,13 +72,31 @@ const DashboardPage = () => {
         <Card>
           <CardHeader><CardTitle>Cuộc đua sắp diễn ra</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Dữ liệu sẽ hiển thị khi Backend sẵn sàng</p>
+            {upcomingLoading ? (
+              <div className="space-y-2">
+                {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10" />)}
+              </div>
+            ) : upcomingRaces.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Không có cuộc đua nào sắp diễn ra</p>
+            ) : (
+              <div className="space-y-2">
+                {upcomingRaces.map((race) => (
+                  <div key={race.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{race.name}</p>
+                      <p className="text-xs text-muted-foreground">{race.location} · {race.raceDate ? formatDateTime(race.raceDate) : '?'}</p>
+                    </div>
+                    <StatusBadge status={race.status} colorClass={getRaceStatusColor(race.status)} />
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
         <Card>
           <CardHeader><CardTitle>Hoạt động gần đây</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">Dữ liệu sẽ hiển thị khi Backend sẵn sàng</p>
+            <p className="text-sm text-muted-foreground">Xem chi tiết tại trang Audit Log</p>
           </CardContent>
         </Card>
       </div>

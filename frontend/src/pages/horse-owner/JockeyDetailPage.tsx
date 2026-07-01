@@ -1,18 +1,24 @@
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { jockeyApi } from '@/api/jockeyApi';
 import { queryKeys } from '@/constants/queryKeys';
 import { JockeyStatus } from '@/types/enums';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/common/StatusBadge';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { getJockeyStatusColor } from '@/utils/getStatusColor';
 import { formatDate } from '@/utils/formatDate';
-import { ArrowLeft, Edit, Loader2 } from 'lucide-react';
+import { handleApiError } from '@/utils/apiHelpers';
+import { ArrowLeft, Edit, Trash2, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const JockeyDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.jockeys.detail(id ?? ''),
@@ -21,6 +27,16 @@ const JockeyDetailPage = () => {
   });
 
   const jockey = data?.data?.data;
+
+  const deleteMutation = useMutation({
+    mutationFn: () => jockeyApi.delete(id ?? ''),
+    onSuccess: () => {
+      toast.success('Đã xóa nài');
+      queryClient.invalidateQueries({ queryKey: queryKeys.jockeys.all });
+      navigate('/my-jockeys');
+    },
+    onError: (error) => toast.error(handleApiError(error)),
+  });
 
   if (isLoading) {
     return (
@@ -41,19 +57,32 @@ const JockeyDetailPage = () => {
     );
   }
 
+  const canEdit = jockey.status !== JockeyStatus.INACTIVE;
+  const canDelete = jockey.status === JockeyStatus.PENDING || jockey.status === JockeyStatus.REJECTED;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <Button variant="ghost" onClick={() => navigate('/my-jockeys')}>
           <ArrowLeft className="h-4 w-4 mr-2" />Quay lại
         </Button>
-        {jockey.status === JockeyStatus.PENDING && (
-          <Link to={`/my-jockeys/${jockey.id}/edit`}>
-            <Button className="bg-[#D4A017] hover:bg-[#C8940A] text-white">
-              <Edit className="h-4 w-4 mr-2" />Chỉnh sửa
+        <div className="flex gap-2">
+          {canEdit && (
+            <Link to={`/my-jockeys/${jockey.id}/edit`}>
+              <Button className="bg-[#D4A017] hover:bg-[#C8940A] text-white">
+                <Edit className="h-4 w-4 mr-2" />
+                {(jockey.status === JockeyStatus.APPROVED || jockey.status === JockeyStatus.ACTIVE)
+                  ? 'Yêu cầu cập nhật'
+                  : 'Chỉnh sửa'}
+              </Button>
+            </Link>
+          )}
+          {canDelete && (
+            <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+              <Trash2 className="h-4 w-4 mr-2" />Xóa
             </Button>
-          </Link>
-        )}
+          )}
+        </div>
       </div>
 
       <Card>
@@ -96,6 +125,16 @@ const JockeyDetailPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Xóa nài"
+        description="Bạn có chắc muốn xóa nài này? Hành động không thể hoàn tác."
+        onConfirm={() => deleteMutation.mutate()}
+        variant="destructive"
+        confirmText="Xóa"
+      />
     </div>
   );
 };
