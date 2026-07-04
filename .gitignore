@@ -1,21 +1,21 @@
-# IntelliJ
+# Backend (Maven)
+backend/target/
+backend/*.log
+
+# Frontend (Node/Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/*.log
+
+# IDE
 .idea/
 *.iml
+.vscode/
 
-# Node
-node_modules/
+# OS
+.DS_Store
+Thumbs.db
 
-# Build
-dist/
-build/
-target/
-
-# Logs
-*.log
-
-# Uploaded files (backend)
-backend/uploads/
-
-# Environment
+# Env files
 .env
 .env.local
