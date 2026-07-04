@@ -73,4 +73,8 @@ export const queryKeys = {
     upcoming: ['dashboard', 'upcoming'] as const,
     recent: ['dashboard', 'recent'] as const,
   },
+
+  files: {
+    list: (fileType: string) => ['files', 'list', fileType] as const,
+  },
 };

@@ -58,8 +58,12 @@ public class NotificationService {
         return PageResponse.of(thongBaoRepository.findByMaTKAndTrangThai(maTK, trangThai, pageable), this::mapToResponseDTO);
     }
 
-    public void markRead(String maThongBao) {
+    public void markRead(String maThongBao, String requesterMaTK) {
         thongBaoRepository.findById(maThongBao).ifPresent(tb -> {
+            if (!tb.getMaTK().equals(requesterMaTK)) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Bạn không có quyền thao tác trên thông báo của người khác");
+            }
             tb.setTrangThai(ThongBao.DA_DOC);
             thongBaoRepository.save(tb);
         });
