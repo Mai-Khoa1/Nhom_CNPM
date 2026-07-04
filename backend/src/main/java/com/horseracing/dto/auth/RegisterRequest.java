@@ -1,6 +1,6 @@
 package com.horseracing.dto.auth;
 
-import jakarta.validation.constraints.Email;
+import com.horseracing.validation.ValidEmailFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -24,7 +24,7 @@ public class RegisterRequest {
     private String fullName;
 
     @NotBlank(message = "Email không được để trống")
-    @Email(message = "Email không hợp lệ")
+    @ValidEmailFormat
     private String email;
 
     private String phone;
