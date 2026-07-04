@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useUiStore } from '@/store/uiStore';
 import { useNotificationStore } from '@/store/notificationStore';
+import { useNotificationBadge } from '@/hooks/useNotificationBadge';
 import { Button } from '@/components/ui/button';
 import {
   Sun, Moon, LogOut, Bell, User, Menu, ChevronLeft,
@@ -12,6 +13,7 @@ const DashboardLayout = () => {
   const { user, logout } = useAuthStore();
   const { theme, toggleTheme, sidebarCollapsed, toggleSidebar } = useUiStore();
   const { unreadCount } = useNotificationStore();
+  useNotificationBadge();
   const location = useLocation();
 
   const links = [
