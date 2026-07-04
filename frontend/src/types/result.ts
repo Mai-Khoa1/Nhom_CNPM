@@ -8,6 +8,7 @@ export interface ResultDetailItem {
 export interface ResultEntryRequest {
   raceId: string;
   details: ResultDetailItem[];
+  confirmEditPublished?: boolean;
 }
 
 export interface ResultDetailResponse {

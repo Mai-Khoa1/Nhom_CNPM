@@ -20,4 +20,7 @@ public class ResultEntryRequestDTO {
     @NotEmpty(message = "Danh sách kết quả không được để trống")
     @Valid
     private List<ResultDetailRequestDTO> details;
+
+    /** Phải = true mới được sửa kết quả của 1 chặng đua đã công bố (xác nhận rõ ràng từ Ban tổ chức). */
+    private boolean confirmEditPublished;
 }

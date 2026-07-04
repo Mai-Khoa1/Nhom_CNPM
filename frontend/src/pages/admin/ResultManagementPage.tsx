@@ -133,6 +133,12 @@ const ResultManagementPage = () => {
       toast.error('Các hạng không được trùng nhau');
       return;
     }
+    if (result?.isPublished) {
+      const confirmed = window.confirm(
+        'Kết quả cuộc đua này đã được công bố. Sửa kết quả có thể ảnh hưởng tới điểm/bảng xếp hạng đã công khai. Bạn có chắc chắn muốn tiếp tục?'
+      );
+      if (!confirmed) return;
+    }
     const payload: ResultEntryRequest = {
       raceId: selectedRaceId!,
       details: filledRows.map((r) => ({
@@ -141,6 +147,7 @@ const ResultManagementPage = () => {
         finishTime: r.finishTime || undefined,
         notes: r.notes || undefined,
       })),
+      confirmEditPublished: !!result?.isPublished,
     };
     submitResultsMutation.mutate(payload);
   };
@@ -271,6 +278,14 @@ const ResultManagementPage = () => {
             <h2 className="text-lg font-semibold">Nhập kết quả — {selectedRace?.name}</h2>
             <Button variant="outline" onClick={() => setMode('view')}>Hủy</Button>
           </div>
+
+          {result?.isPublished && (
+            <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                ⚠️ Kết quả cuộc đua này đã được công bố. Việc sửa sẽ yêu cầu xác nhận và có thể ảnh hưởng tới điểm/bảng xếp hạng đã công khai.
+              </p>
+            </div>
+          )}
 
           {loadingRegistrations ? (
             <div className="flex items-center justify-center h-32">
