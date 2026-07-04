@@ -35,8 +35,17 @@ public class NaiNguaController {
             Pageable pageable,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) JockeyStatus status,
-            @RequestParam(required = false) String ownerId) {
-        return ResponseEntity.ok(ApiResponse.success(naiNguaService.getAllJockeys(pageable, keyword, status, ownerId)));
+            @RequestParam(required = false) String ownerId,
+            Authentication authentication) {
+        String effectiveOwnerId = ownerId;
+        JockeyStatus effectiveStatus = status;
+        if (currentUserService.hasRole(authentication, "HORSE_OWNER")) {
+            effectiveOwnerId = currentUserService.resolveMaTK(authentication);
+        } else if (!currentUserService.isPrivileged(authentication)) {
+            effectiveStatus = JockeyStatus.APPROVED;
+        }
+        return ResponseEntity.ok(ApiResponse.success(
+                naiNguaService.getAllJockeys(pageable, keyword, effectiveStatus, effectiveOwnerId)));
     }
 
     @GetMapping("/{id}")
@@ -56,13 +65,15 @@ public class NaiNguaController {
     public ResponseEntity<ApiResponse<NaiNguaResponseDTO>> updateJockey(
             @PathVariable String id, @Valid @RequestBody NaiNguaRequestDTO dto, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
-        return ResponseEntity.ok(ApiResponse.success(naiNguaService.updateJockey(id, dto, staffId)));
+        boolean privileged = currentUserService.isPrivileged(authentication);
+        return ResponseEntity.ok(ApiResponse.success(naiNguaService.updateJockey(id, dto, staffId, privileged)));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteJockey(@PathVariable String id, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
-        naiNguaService.deleteJockey(id, staffId);
+        boolean privileged = currentUserService.isPrivileged(authentication);
+        naiNguaService.deleteJockey(id, staffId, privileged);
         return ResponseEntity.ok(ApiResponse.success(null, "Xóa jockey thành công"));
     }
 

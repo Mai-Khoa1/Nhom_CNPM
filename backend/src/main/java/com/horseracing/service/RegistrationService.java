@@ -1,5 +1,7 @@
 package com.horseracing.service;
 
+import com.horseracing.dto.common.HorseStatus;
+import com.horseracing.dto.common.JockeyStatus;
 import com.horseracing.dto.common.NotificationType;
 import com.horseracing.dto.common.PageResponse;
 import com.horseracing.dto.common.RegistrationStatus;
@@ -51,14 +53,37 @@ public class RegistrationService {
         NaiNgua naiNgua = naiNguaRepository.findById(dto.getJockeyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Jockey", "jockeyId", dto.getJockeyId()));
 
+        ChuNgua chuNgua = chuNguaRepository.findByMaTK(ownerMaTK)
+                .orElseThrow(() -> new ResourceNotFoundException("Chủ ngựa của tài khoản", "maTK", ownerMaTK));
+
+        // Ngựa và jockey đăng ký cùng 1 chặng đua phải thuộc cùng 1 chủ sở hữu là người đang đăng ký.
+        if (!chuNgua.getMaChuNgua().equals(ngua.getMaChuNgua())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Ngựa '" + ngua.getTenNgua() + "' không thuộc quyền sở hữu của bạn");
+        }
+        if (!chuNgua.getMaChuNgua().equals(naiNgua.getMaChuNgua())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Jockey '" + naiNgua.getHoTen() + "' không thuộc quyền sở hữu của bạn");
+        }
+
+        // Ngựa và jockey phải ở trạng thái ĐÃ DUYỆT mới được đăng ký thi đấu.
+        if (HorseStatus.APPROVED != StatusMapper.toHorseStatus(ngua.getTrangThai())) {
+            throw new ResourceInUseException("Ngựa '" + ngua.getTenNgua() + "' chưa được duyệt, không thể đăng ký thi đấu.");
+        }
+        if (JockeyStatus.APPROVED != StatusMapper.toJockeyStatus(naiNgua.getTrangThai())) {
+            throw new ResourceInUseException("Jockey '" + naiNgua.getHoTen() + "' chưa được duyệt, không thể đăng ký thi đấu.");
+        }
+
         if (dangKyThiDauRepository.existsByMaChangDuaAndMaNgua(dto.getRaceId(), dto.getHorseId())) {
             throw new DuplicateResourceException("Ngựa '" + ngua.getTenNgua() + "' đã được đăng ký trong chặng đua này.");
         }
         if (dangKyThiDauRepository.existsByMaChangDuaAndMaNaiNgua(dto.getRaceId(), dto.getJockeyId())) {
             throw new DuplicateResourceException("Jockey '" + naiNgua.getHoTen() + "' đã được đăng ký trong chặng đua này.");
         }
+        // Chỉ tính đăng ký đang chờ duyệt/đã duyệt, bỏ qua các đăng ký đã bị từ chối.
         if (schedule.getSoNguaToiDa() != null
-                && dangKyThiDauRepository.countByMaChangDua(dto.getRaceId()) >= schedule.getSoNguaToiDa()) {
+                && dangKyThiDauRepository.countByMaChangDuaAndTrangThaiNot(
+                        dto.getRaceId(), DangKyThiDau.TRANG_THAI_TU_CHOI) >= schedule.getSoNguaToiDa()) {
             throw new ResourceInUseException("Chặng đua '" + schedule.getTenChangDua() + "' đã đủ số lượng đăng ký tối đa.");
         }
 
@@ -162,6 +187,7 @@ public class RegistrationService {
         DangKyThiDau registration = dangKyThiDauRepository.findById(dto.getRegistrationId())
                 .orElseThrow(() -> new ResourceNotFoundException("Đăng ký thi đấu", "id", dto.getRegistrationId()));
 
+        assertLaneNotTaken(registration.getMaChangDua(), dto.getLaneNumber(), registration.getMaDangKy());
         registration.setSoLan(dto.getLaneNumber());
         registration.setNgayGanLan(LocalDateTime.now());
         DangKyThiDau updated = dangKyThiDauRepository.save(registration);
@@ -176,6 +202,7 @@ public class RegistrationService {
         DangKyThiDau registration = dangKyThiDauRepository.findById(maDangKy)
                 .orElseThrow(() -> new ResourceNotFoundException("Làn đua", "id", maDangKy));
 
+        assertLaneNotTaken(registration.getMaChangDua(), dto.getLaneNumber(), maDangKy);
         registration.setSoLan(dto.getLaneNumber());
         registration.setNgayGanLan(LocalDateTime.now());
         DangKyThiDau updated = dangKyThiDauRepository.save(registration);
@@ -208,6 +235,13 @@ public class RegistrationService {
     @Transactional(readOnly = true)
     public PageResponse<RegistrationResponseDTO> getRegistrationsByRace(String maChangDua, Pageable pageable) {
         return PageResponse.of(dangKyThiDauRepository.findByMaChangDua(maChangDua, pageable), this::mapToFullResponseDTO);
+    }
+
+    /** Mỗi làn đua chỉ được gán cho 1 ngựa trong cùng 1 chặng đua. */
+    private void assertLaneNotTaken(String maChangDua, Integer laneNumber, String excludeMaDangKy) {
+        if (dangKyThiDauRepository.existsByMaChangDuaAndSoLanAndMaDangKyNot(maChangDua, laneNumber, excludeMaDangKy)) {
+            throw new DuplicateResourceException("Làn đua số " + laneNumber + " đã được gán cho ngựa khác trong chặng đua này.");
+        }
     }
 
     // ----- Helper -----

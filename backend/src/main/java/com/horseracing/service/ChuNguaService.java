@@ -46,9 +46,10 @@ public class ChuNguaService {
         return mapToResponseDTO(chuNguaRepository.save(chuNgua));
     }
 
-    public ChuNguaResponseDTO updateChuNgua(String maChuNgua, ChuNguaRequestDTO dto) {
+    public ChuNguaResponseDTO updateChuNgua(String maChuNgua, ChuNguaRequestDTO dto, String requesterMaTK, boolean privileged) {
         ChuNgua chuNgua = chuNguaRepository.findById(maChuNgua)
                 .orElseThrow(() -> new ResourceNotFoundException("Chủ ngựa", "maChuNgua", maChuNgua));
+        assertOwnership(chuNgua, requesterMaTK, privileged);
 
         chuNgua.setHoTen(dto.getHoTen());
         chuNgua.setDiaChi(dto.getDiaChi());
@@ -58,9 +59,10 @@ public class ChuNguaService {
         return mapToResponseDTO(chuNguaRepository.save(chuNgua));
     }
 
-    public void deleteChuNgua(String maChuNgua) {
+    public void deleteChuNgua(String maChuNgua, String requesterMaTK, boolean privileged) {
         ChuNgua chuNgua = chuNguaRepository.findById(maChuNgua)
                 .orElseThrow(() -> new ResourceNotFoundException("Chủ ngựa", "maChuNgua", maChuNgua));
+        assertOwnership(chuNgua, requesterMaTK, privileged);
 
         boolean hasHorses = !nguaRepository.findByMaChuNgua(maChuNgua).isEmpty();
         boolean hasJockeys = !naiNguaRepository.findByMaChuNgua(maChuNgua).isEmpty();
@@ -102,6 +104,13 @@ public class ChuNguaService {
                 .soDienThoai(chuNgua.getSoDienThoai())
                 .email(chuNgua.getEmail())
                 .build();
+    }
+
+    private void assertOwnership(ChuNgua chuNgua, String requesterMaTK, boolean privileged) {
+        if (!privileged && !chuNgua.getMaTK().equals(requesterMaTK)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Bạn không có quyền thao tác trên hồ sơ chủ ngựa khác");
+        }
     }
 
     private String generateMaChuNgua() {

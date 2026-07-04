@@ -1,6 +1,6 @@
 package com.horseracing.dto.user;
 
-import jakarta.validation.constraints.Email;
+import com.horseracing.validation.ValidEmailFormat;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,7 +12,7 @@ public class UserUpdateRequestDTO {
 
     private String fullName;
 
-    @Email(message = "Email không hợp lệ")
+    @ValidEmailFormat
     private String email;
 
     private String phone;

@@ -53,9 +53,14 @@ public class NguaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Chủ ngựa của tài khoản", "maTK", ownerMaTK));
 
         String maNgua = (dto.getCode() != null && !dto.getCode().isBlank()) ? dto.getCode() : generateMaNgua();
-        if (nguaRepository.existsById(maNgua)) {
-            throw new DuplicateResourceException("Mã ngựa '" + maNgua + "' đã tồn tại");
-        }
+        nguaRepository.findById(maNgua).ifPresent(existing -> {
+            HorseStatus existingStatus = StatusMapper.toHorseStatus(existing.getTrangThai());
+            if (existingStatus != HorseStatus.REJECTED) {
+                // Chỉ chặn trùng mã với ngựa đang chờ duyệt/đã duyệt/bị loại; mã đã bị TỪ CHỐI được phép tạo lại.
+                throw new DuplicateResourceException("Mã ngựa '" + existing.getMaNgua() + "' đã tồn tại");
+            }
+            nguaRepository.delete(existing);
+        });
 
         Ngua ngua = Ngua.builder()
                 .maNgua(maNgua)
@@ -88,11 +93,13 @@ public class NguaService {
      * - PENDING / REJECTED: cập nhật trực tiếp (chưa duyệt, không cần qua UpdateRequest).
      * - APPROVED: tạo YeuCauCapNhat chờ Ban tổ chức duyệt, dữ liệu gốc giữ nguyên cho đến khi duyệt.
      */
-    public NguaResponseDTO updateHorse(String maNgua, NguaRequestDTO dto, String staffId) {
+    public NguaResponseDTO updateHorse(String maNgua, NguaRequestDTO dto, String staffId, boolean privileged) {
         Ngua ngua = nguaRepository.findById(maNgua)
                 .orElseThrow(() -> new ResourceNotFoundException("Ngựa", "maNgua", maNgua));
         ChuNgua chuNgua = chuNguaRepository.findById(ngua.getMaChuNgua())
                 .orElseThrow(() -> new ResourceNotFoundException("Chủ ngựa", "maChuNgua", ngua.getMaChuNgua()));
+
+        assertOwnership(chuNgua, staffId, privileged);
 
         HorseStatus currentStatus = StatusMapper.toHorseStatus(ngua.getTrangThai());
         if (HorseStatus.APPROVED.equals(currentStatus)) {
@@ -117,9 +124,12 @@ public class NguaService {
         return mapToResponseDTO(ngua, chuNgua);
     }
 
-    public void deleteHorse(String maNgua, String staffId) {
+    public void deleteHorse(String maNgua, String staffId, boolean privileged) {
         Ngua ngua = nguaRepository.findById(maNgua)
                 .orElseThrow(() -> new ResourceNotFoundException("Ngựa", "maNgua", maNgua));
+        ChuNgua chuNgua = chuNguaRepository.findById(ngua.getMaChuNgua())
+                .orElseThrow(() -> new ResourceNotFoundException("Chủ ngựa", "maChuNgua", ngua.getMaChuNgua()));
+        assertOwnership(chuNgua, staffId, privileged);
 
         if (nguaRepository.countUpcomingRaces(maNgua) > 0) {
             throw new ResourceInUseException(
@@ -245,6 +255,14 @@ public class NguaService {
                 .ownerName(chuNgua != null ? chuNgua.getHoTen() : null)
                 .createdAt(ngua.getNgayTao())
                 .build();
+    }
+
+    /** Chặn chủ ngựa A sửa/xóa ngựa của chủ ngựa B (ADMIN/ORGANIZER được bỏ qua). */
+    private void assertOwnership(ChuNgua chuNgua, String requesterMaTK, boolean privileged) {
+        if (!privileged && !chuNgua.getMaTK().equals(requesterMaTK)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Bạn không có quyền thao tác trên ngựa của chủ sở hữu khác");
+        }
     }
 
     private String generateMaNgua() {

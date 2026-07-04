@@ -53,13 +53,17 @@ public class ChuNguaController {
 
     @PutMapping("/{maChuNgua}")
     public ResponseEntity<ApiResponse<ChuNguaResponseDTO>> updateChuNgua(
-            @PathVariable String maChuNgua, @Valid @RequestBody ChuNguaRequestDTO dto) {
-        return ResponseEntity.ok(ApiResponse.success(chuNguaService.updateChuNgua(maChuNgua, dto)));
+            @PathVariable String maChuNgua, @Valid @RequestBody ChuNguaRequestDTO dto, Authentication authentication) {
+        String requesterMaTK = currentUserService.resolveMaTK(authentication);
+        boolean privileged = currentUserService.isPrivileged(authentication);
+        return ResponseEntity.ok(ApiResponse.success(chuNguaService.updateChuNgua(maChuNgua, dto, requesterMaTK, privileged)));
     }
 
     @DeleteMapping("/{maChuNgua}")
-    public ResponseEntity<ApiResponse<Void>> deleteChuNgua(@PathVariable String maChuNgua) {
-        chuNguaService.deleteChuNgua(maChuNgua);
+    public ResponseEntity<ApiResponse<Void>> deleteChuNgua(@PathVariable String maChuNgua, Authentication authentication) {
+        String requesterMaTK = currentUserService.resolveMaTK(authentication);
+        boolean privileged = currentUserService.isPrivileged(authentication);
+        chuNguaService.deleteChuNgua(maChuNgua, requesterMaTK, privileged);
         return ResponseEntity.ok(ApiResponse.success(null, "Đã xóa hồ sơ chủ ngựa"));
     }
 }

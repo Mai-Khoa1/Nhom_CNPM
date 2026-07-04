@@ -38,8 +38,19 @@ public class NguaController {
             Pageable pageable,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) HorseStatus status,
-            @RequestParam(required = false) String ownerId) {
-        return ResponseEntity.ok(ApiResponse.success(nguaService.getAllHorses(pageable, keyword, status, ownerId)));
+            @RequestParam(required = false) String ownerId,
+            Authentication authentication) {
+        String effectiveOwnerId = ownerId;
+        HorseStatus effectiveStatus = status;
+        if (currentUserService.hasRole(authentication, "HORSE_OWNER")) {
+            // Chủ ngựa chỉ được xem ngựa của chính mình, bỏ qua ownerId client gửi lên.
+            effectiveOwnerId = currentUserService.resolveMaTK(authentication);
+        } else if (!currentUserService.isPrivileged(authentication)) {
+            // Khách/người xem chưa đăng nhập chỉ được xem ngựa đã duyệt.
+            effectiveStatus = HorseStatus.APPROVED;
+        }
+        return ResponseEntity.ok(ApiResponse.success(
+                nguaService.getAllHorses(pageable, keyword, effectiveStatus, effectiveOwnerId)));
     }
 
     @GetMapping("/{id}")
@@ -74,13 +85,15 @@ public class NguaController {
     public ResponseEntity<ApiResponse<NguaResponseDTO>> updateHorse(
             @PathVariable String id, @Valid @RequestBody NguaRequestDTO dto, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
-        return ResponseEntity.ok(ApiResponse.success(nguaService.updateHorse(id, dto, staffId)));
+        boolean privileged = currentUserService.isPrivileged(authentication);
+        return ResponseEntity.ok(ApiResponse.success(nguaService.updateHorse(id, dto, staffId, privileged)));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteHorse(@PathVariable String id, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
-        nguaService.deleteHorse(id, staffId);
+        boolean privileged = currentUserService.isPrivileged(authentication);
+        nguaService.deleteHorse(id, staffId, privileged);
         return ResponseEntity.ok(ApiResponse.success(null, "Xóa ngựa thành công"));
     }
 

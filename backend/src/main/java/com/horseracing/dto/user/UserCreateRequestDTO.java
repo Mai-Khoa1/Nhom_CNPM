@@ -1,7 +1,7 @@
 package com.horseracing.dto.user;
 
 import com.horseracing.dto.common.Role;
-import jakarta.validation.constraints.Email;
+import com.horseracing.validation.ValidEmailFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -26,7 +26,7 @@ public class UserCreateRequestDTO {
     private String fullName;
 
     @NotBlank(message = "Email không được để trống")
-    @Email(message = "Email không hợp lệ")
+    @ValidEmailFormat
     private String email;
 
     private String phone;

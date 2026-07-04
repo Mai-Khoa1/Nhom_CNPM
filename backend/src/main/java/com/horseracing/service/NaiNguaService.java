@@ -83,18 +83,19 @@ public class NaiNguaService {
      * - PENDING / REJECTED: cập nhật trực tiếp (chưa duyệt, không cần qua UpdateRequest).
      * - APPROVED: tạo YeuCauCapNhat chờ Ban tổ chức duyệt, dữ liệu gốc giữ nguyên cho đến khi duyệt.
      */
-    public NaiNguaResponseDTO updateJockey(String maNaiNgua, NaiNguaRequestDTO dto, String staffId) {
+    public NaiNguaResponseDTO updateJockey(String maNaiNgua, NaiNguaRequestDTO dto, String staffId, boolean privileged) {
         NaiNgua naiNgua = naiNguaRepository.findById(maNaiNgua)
                 .orElseThrow(() -> new ResourceNotFoundException("Jockey", "maNaiNgua", maNaiNgua));
+
+        ChuNgua chuNgua = chuNguaRepository.findById(naiNgua.getMaChuNgua())
+                .orElseThrow(() -> new ResourceNotFoundException("Chủ ngựa", "maChuNgua", naiNgua.getMaChuNgua()));
+        assertOwnership(chuNgua, staffId, privileged);
 
         if (dto.getLicenseNumber() != null
                 && naiNguaRepository.existsBySoGiayPhepAndMaNaiNguaNot(dto.getLicenseNumber(), maNaiNgua)) {
             throw new DuplicateResourceException(
                     "Số giấy phép '" + dto.getLicenseNumber() + "' đã được sử dụng bởi jockey khác.");
         }
-
-        ChuNgua chuNgua = chuNguaRepository.findById(naiNgua.getMaChuNgua())
-                .orElseThrow(() -> new ResourceNotFoundException("Chủ ngựa", "maChuNgua", naiNgua.getMaChuNgua()));
 
         JockeyStatus currentStatus = StatusMapper.toJockeyStatus(naiNgua.getTrangThai());
         if (JockeyStatus.APPROVED.equals(currentStatus) || JockeyStatus.ACTIVE.equals(currentStatus)) {
@@ -119,9 +120,12 @@ public class NaiNguaService {
         return mapToResponseDTO(naiNgua, chuNgua);
     }
 
-    public void deleteJockey(String maNaiNgua, String staffId) {
+    public void deleteJockey(String maNaiNgua, String staffId, boolean privileged) {
         NaiNgua naiNgua = naiNguaRepository.findById(maNaiNgua)
                 .orElseThrow(() -> new ResourceNotFoundException("Jockey", "maNaiNgua", maNaiNgua));
+        ChuNgua chuNgua = chuNguaRepository.findById(naiNgua.getMaChuNgua())
+                .orElseThrow(() -> new ResourceNotFoundException("Chủ ngựa", "maChuNgua", naiNgua.getMaChuNgua()));
+        assertOwnership(chuNgua, staffId, privileged);
 
         if (naiNguaRepository.countUpcomingRaces(maNaiNgua) > 0) {
             naiNgua.setTrangThai(StatusMapper.toTrangThaiJockey(JockeyStatus.INACTIVE));
@@ -225,6 +229,14 @@ public class NaiNguaService {
                 .status(StatusMapper.toJockeyStatus(naiNgua.getTrangThai()))
                 .createdAt(naiNgua.getNgayTao())
                 .build();
+    }
+
+    /** Chặn chủ ngựa A sửa/xóa jockey của chủ ngựa B (ADMIN/ORGANIZER được bỏ qua). */
+    private void assertOwnership(ChuNgua chuNgua, String requesterMaTK, boolean privileged) {
+        if (!privileged && !chuNgua.getMaTK().equals(requesterMaTK)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Bạn không có quyền thao tác trên jockey của chủ sở hữu khác");
+        }
     }
 
     private String generateMaNaiNgua() {
