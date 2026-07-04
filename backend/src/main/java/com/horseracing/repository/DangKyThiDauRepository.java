@@ -18,9 +18,13 @@ public interface DangKyThiDauRepository extends JpaRepository<DangKyThiDau, Stri
 
     long countByMaChangDua(String maChangDua);
 
+    long countByMaChangDuaAndTrangThaiNot(String maChangDua, String trangThai);
+
     long countByTrangThai(String trangThai);
 
     boolean existsByMaChangDuaAndMaNgua(String maChangDua, String maNgua);
 
     boolean existsByMaChangDuaAndMaNaiNgua(String maChangDua, String maNaiNgua);
+
+    boolean existsByMaChangDuaAndSoLanAndMaDangKyNot(String maChangDua, Integer soLan, String maDangKy);
 }
