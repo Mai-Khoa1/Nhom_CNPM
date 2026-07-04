@@ -40,6 +40,9 @@ public class MuaGiaiService {
     private final ScheduleRepository scheduleRepository;
     private final NhatKyHoatDongService nhatKyHoatDongService;
 
+    /** Luật tính điểm mặc định cho mùa giải mới: hạng 1 = 10đ, hạng 2 = 7đ, hạng 3 = 5đ, hạng 4 = 3đ, hạng 5 = 2đ, hạng 6 = 1đ. */
+    private static final double[] DEFAULT_POINTS_BY_RANK = {10, 7, 5, 3, 2, 1};
+
     public SeasonResponseDTO createSeason(SeasonRequestDTO dto, String staffId) {
         MuaGiai muaGiai = MuaGiai.builder()
                 .maMuaGiai(generateMaMuaGiai())
@@ -50,10 +53,22 @@ public class MuaGiaiService {
                 .build();
 
         MuaGiai saved = muaGiaiRepository.save(muaGiai);
+        seedDefaultPointRules(saved.getMaMuaGiai());
         nhatKyHoatDongService.writeAuditLog(staffId, "CREATE_SEASON", "Season:" + saved.getMaMuaGiai(),
                 "Tạo mùa giải mới: " + saved.getTenMuaGiai());
 
         return mapToResponseDTO(saved);
+    }
+
+    private void seedDefaultPointRules(String maMuaGiai) {
+        for (int i = 0; i < DEFAULT_POINTS_BY_RANK.length; i++) {
+            luatDiemRepository.save(LuatDiem.builder()
+                    .maLuatDiem("LD" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase())
+                    .maMuaGiai(maMuaGiai)
+                    .hang(i + 1)
+                    .diem(DEFAULT_POINTS_BY_RANK[i])
+                    .build());
+        }
     }
 
     public SeasonResponseDTO updateSeason(String maMuaGiai, SeasonRequestDTO dto, String staffId) {
@@ -91,6 +106,14 @@ public class MuaGiaiService {
     public void closeSeason(String maMuaGiai, String staffId) {
         MuaGiai muaGiai = muaGiaiRepository.findById(maMuaGiai)
                 .orElseThrow(() -> new ResourceNotFoundException("Mùa giải", "id", maMuaGiai));
+
+        long openRaces = scheduleRepository.countByMaMuaGiaiAndTrangThai(
+                maMuaGiai, StatusMapper.toTrangThaiChangDua(com.horseracing.dto.common.RaceStatus.OPEN));
+        if (openRaces > 0) {
+            throw new ResourceInUseException(
+                    "Không thể đóng mùa giải '" + muaGiai.getTenMuaGiai() + "' vì còn " + openRaces
+                            + " chặng đua đang ở trạng thái Mở đăng ký. Hãy đóng/hoàn thành các chặng đua này trước.");
+        }
 
         muaGiai.setTrangThai(StatusMapper.toTrangThaiMuaGiai(SeasonStatus.CLOSED));
         muaGiaiRepository.save(muaGiai);

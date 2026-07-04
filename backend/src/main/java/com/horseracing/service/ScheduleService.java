@@ -101,6 +101,13 @@ public class ScheduleService {
         Schedule schedule = scheduleRepository.findById(maChangDua)
                 .orElseThrow(() -> new ResourceNotFoundException("Chặng đua", "id", maChangDua));
 
+        RaceStatus status = StatusMapper.toRaceStatus(schedule.getTrangThai());
+        if (status != RaceStatus.OPEN) {
+            throw new ResourceInUseException(
+                    "Không thể xóa chặng đua '" + schedule.getTenChangDua() + "' vì chỉ được xóa khi ở trạng thái Mở đăng ký (hiện tại: "
+                            + status + ").");
+        }
+
         if (!resultRepository.findByMaChangDua(maChangDua).isEmpty()) {
             throw new ResourceInUseException(
                     "Không thể xóa chặng đua '" + schedule.getTenChangDua() + "' vì đã có kết quả thi đấu.");

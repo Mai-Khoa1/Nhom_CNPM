@@ -14,4 +14,6 @@ public interface ScheduleRepository extends JpaRepository<Schedule, String>, Jpa
     long countByTrangThai(String trangThai);
 
     long countByMaMuaGiai(String maMuaGiai);
+
+    long countByMaMuaGiaiAndTrangThai(String maMuaGiai, String trangThai);
 }
