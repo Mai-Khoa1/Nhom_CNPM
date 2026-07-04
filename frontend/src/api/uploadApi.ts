@@ -27,4 +27,7 @@ export const uploadApi = {
 
   getById: (id: string) =>
     axiosInstance.get(`/upload/${id}`),
+
+  list: (params: { fileType?: string; targetType?: string; targetId?: string }) =>
+    axiosInstance.get<ApiResponse<FileUploadResponse[]>>('/upload', { params }),
 };

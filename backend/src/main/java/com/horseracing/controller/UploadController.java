@@ -11,6 +11,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
+
 /**
  * UploadController - tải lên và tải xuống file. Base path /upload khớp frontend.
  */
@@ -30,6 +32,14 @@ public class UploadController {
             @RequestParam(required = false) String targetId) {
         FileUploadResponseDTO result = uploadService.upload(file, fileType, targetType, targetId);
         return ResponseEntity.ok(ApiResponse.success(result, "Tải file lên thành công"));
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<FileUploadResponseDTO>>> listFiles(
+            @RequestParam(required = false) String fileType,
+            @RequestParam(required = false) String targetType,
+            @RequestParam(required = false) String targetId) {
+        return ResponseEntity.ok(ApiResponse.success(uploadService.listFiles(fileType, targetType, targetId)));
     }
 
     @GetMapping("/{id}")
