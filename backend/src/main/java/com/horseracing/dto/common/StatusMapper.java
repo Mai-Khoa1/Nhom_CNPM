@@ -28,54 +28,6 @@ public final class StatusMapper {
         };
     }
 
-    // ----- HorseStatus (Ngua.trangThai) -----
-
-    public static HorseStatus toHorseStatus(String trangThai) {
-        if (trangThai == null) return HorseStatus.PENDING;
-        return switch (trangThai) {
-            case "Chờ duyệt" -> HorseStatus.PENDING;
-            case "Đủ điều kiện" -> HorseStatus.APPROVED;
-            case "Bị từ chối" -> HorseStatus.REJECTED;
-            case "Bị loại" -> HorseStatus.DISQUALIFIED;
-            default -> throw new IllegalArgumentException("Trạng thái ngựa không hợp lệ: " + trangThai);
-        };
-    }
-
-    public static String toTrangThaiNgua(HorseStatus status) {
-        if (status == null) return "Chờ duyệt";
-        return switch (status) {
-            case PENDING -> "Chờ duyệt";
-            case APPROVED -> "Đủ điều kiện";
-            case REJECTED -> "Bị từ chối";
-            case DISQUALIFIED -> "Bị loại";
-        };
-    }
-
-    // ----- JockeyStatus (Jockey.trangThai) -----
-
-    public static JockeyStatus toJockeyStatus(String trangThai) {
-        if (trangThai == null) return JockeyStatus.PENDING;
-        return switch (trangThai) {
-            case "Chờ duyệt" -> JockeyStatus.PENDING;
-            case "Đã duyệt" -> JockeyStatus.APPROVED;
-            case "Bị từ chối" -> JockeyStatus.REJECTED;
-            case "Đang hoạt động" -> JockeyStatus.ACTIVE;
-            case "Không hoạt động" -> JockeyStatus.INACTIVE;
-            default -> throw new IllegalArgumentException("Trạng thái jockey không hợp lệ: " + trangThai);
-        };
-    }
-
-    public static String toTrangThaiJockey(JockeyStatus status) {
-        if (status == null) return "Chờ duyệt";
-        return switch (status) {
-            case PENDING -> "Chờ duyệt";
-            case APPROVED -> "Đã duyệt";
-            case REJECTED -> "Bị từ chối";
-            case ACTIVE -> "Đang hoạt động";
-            case INACTIVE -> "Không hoạt động";
-        };
-    }
-
     // ----- RaceStatus (ChangDua.trangThai) -----
 
     public static RaceStatus toRaceStatus(String trangThai) {
@@ -109,7 +61,20 @@ public final class StatusMapper {
             case "Chờ duyệt" -> RegistrationStatus.PENDING;
             case "Đã duyệt" -> RegistrationStatus.APPROVED;
             case "Từ chối" -> RegistrationStatus.REJECTED;
+            case "Đã hủy" -> RegistrationStatus.CANCELLED;
+            case "Bị loại" -> RegistrationStatus.DISQUALIFIED;
             default -> throw new IllegalArgumentException("Trạng thái đăng ký không hợp lệ: " + trangThai);
+        };
+    }
+
+    public static String toTrangThaiDangKy(RegistrationStatus status) {
+        if (status == null) return "Chờ duyệt";
+        return switch (status) {
+            case PENDING -> "Chờ duyệt";
+            case APPROVED -> "Đã duyệt";
+            case REJECTED -> "Từ chối";
+            case CANCELLED -> "Đã hủy";
+            case DISQUALIFIED -> "Bị loại";
         };
     }
 

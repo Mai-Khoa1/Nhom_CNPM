@@ -15,21 +15,6 @@ export enum UserStatus {
   LOCKED = 'LOCKED',
 }
 
-export enum HorseStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  DISQUALIFIED = 'DISQUALIFIED',
-}
-
-export enum JockeyStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
-}
-
 export enum SeasonStatus {
   UPCOMING = 'UPCOMING',
   ONGOING = 'ONGOING',
@@ -48,6 +33,8 @@ export enum RegistrationStatus {
   PENDING = 'PENDING',
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
+  CANCELLED = 'CANCELLED',
+  DISQUALIFIED = 'DISQUALIFIED',
 }
 
 export enum UpdateRequestStatus {
@@ -59,6 +46,7 @@ export enum UpdateRequestStatus {
 export enum UpdateTargetType {
   HORSE = 'HORSE',
   JOCKEY = 'JOCKEY',
+  FILE = 'FILE',
 }
 
 export enum DopingResult {
