@@ -78,24 +78,28 @@ const HomePage = () => {
                   </div>
                 </CardContent>
               </Card>
-              <Card className="shadow-lg">
-                <CardContent className="p-6 flex items-center gap-4">
-                  <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30"><span className="text-xl">🐴</span></div>
-                  <div>
-                    <p className="text-2xl font-bold">{stats?.totalHorses ?? '-'}</p>
-                    <p className="text-sm text-muted-foreground">Ngựa đua</p>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="shadow-lg">
-                <CardContent className="p-6 flex items-center gap-4">
-                  <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30"><Users className="h-6 w-6 text-purple-600" /></div>
-                  <div>
-                    <p className="text-2xl font-bold">{stats?.totalJockeys ?? '-'}</p>
-                    <p className="text-sm text-muted-foreground">Nài ngựa</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <Link to="/horses">
+                <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer h-full">
+                  <CardContent className="p-6 flex items-center gap-4">
+                    <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30"><span className="text-xl">🐴</span></div>
+                    <div>
+                      <p className="text-2xl font-bold">{stats?.totalHorses ?? '-'}</p>
+                      <p className="text-sm text-muted-foreground">Ngựa đua</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+              <Link to="/jockeys">
+                <Card className="shadow-lg hover:shadow-xl transition-shadow cursor-pointer h-full">
+                  <CardContent className="p-6 flex items-center gap-4">
+                    <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30"><Users className="h-6 w-6 text-purple-600" /></div>
+                    <div>
+                      <p className="text-2xl font-bold">{stats?.totalJockeys ?? '-'}</p>
+                      <p className="text-sm text-muted-foreground">Nài ngựa</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             </>
           )}
         </div>

@@ -26,8 +26,9 @@ const LoginPage = () => {
       const { accessToken, refreshToken, user } = response.data.data;
       login(user, accessToken, refreshToken);
       toast.success('Đăng nhập thành công!');
-      const redirect = user.role === 'ADMIN' || user.role === 'ORGANIZER'
-        ? '/admin/dashboard' : '/my-horses';
+      let redirect = '/';
+      if (user.role === 'ADMIN' || user.role === 'ORGANIZER') redirect = '/admin/dashboard';
+      else if (user.role === 'HORSE_OWNER') redirect = '/my-horses';
       navigate(redirect);
     },
     onError: (error) => {

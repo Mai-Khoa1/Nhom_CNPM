@@ -8,14 +8,6 @@ export const axiosInstance = axios.create({
   timeout: 30000,
 });
 
-axiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = tokenService.getAccessToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (value: string) => void;
@@ -30,6 +22,55 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
 
+/**
+ * Làm mới accessToken - dùng chung cho cả 2 trường hợp: thiếu accessToken khi gửi request,
+ * và bị 401 sau khi gửi. Gộp chung để tránh gọi refresh-token song song (refresh token chỉ dùng 1 lần).
+ */
+const refreshAccessToken = async (refreshToken: string): Promise<string> => {
+  if (isRefreshing) {
+    return new Promise((resolve, reject) => {
+      failedQueue.push({ resolve, reject });
+    });
+  }
+
+  isRefreshing = true;
+  try {
+    const { data } = await axios.post(`${ENV.API_URL}/auth/refresh-token`, { refreshToken });
+    const { accessToken, refreshToken: newRefreshToken } = data.data;
+    tokenService.saveTokens(accessToken, newRefreshToken);
+    processQueue(null, accessToken);
+    return accessToken;
+  } catch (refreshError) {
+    processQueue(refreshError, null);
+    tokenService.clearTokens();
+    window.location.href = '/login';
+    throw refreshError;
+  } finally {
+    isRefreshing = false;
+  }
+};
+
+axiosInstance.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  let token = tokenService.getAccessToken();
+  // accessToken bị xóa/mất nhưng refreshToken còn -> chủ động lấy accessToken mới trước khi gửi request,
+  // vì nhiều endpoint (vd /horses, /jockeys) permitAll cho khách xem công khai: thiếu token sẽ được server
+  // coi là khách vãng lai (không lỗi 401) thay vì báo phiên hết hạn, nên interceptor response không có cơ hội refresh.
+  if (!token) {
+    const refreshToken = tokenService.getRefreshToken();
+    if (refreshToken) {
+      try {
+        token = await refreshAccessToken(refreshToken);
+      } catch {
+        // refreshAccessToken đã tự điều hướng về /login khi refresh thất bại.
+      }
+    }
+  }
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -43,34 +84,13 @@ axiosInstance.interceptors.response.use(
         return Promise.reject(error);
       }
 
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then((token) => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return axiosInstance(originalRequest);
-        });
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
-
       try {
-        const { data } = await axios.post(`${ENV.API_URL}/auth/refresh-token`, { refreshToken });
-        const { accessToken, refreshToken: newRefreshToken } = data.data;
-
-        tokenService.saveTokens(accessToken, newRefreshToken);
-        processQueue(null, accessToken);
-
+        const accessToken = await refreshAccessToken(refreshToken);
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        processQueue(refreshError, null);
-        tokenService.clearTokens();
-        window.location.href = '/login';
         return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
       }
     }
 

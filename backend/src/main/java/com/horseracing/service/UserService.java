@@ -7,10 +7,12 @@ import com.horseracing.dto.user.UserCreateRequestDTO;
 import com.horseracing.dto.user.UserMapper;
 import com.horseracing.dto.user.UserResponseDTO;
 import com.horseracing.dto.user.UserUpdateRequestDTO;
+import com.horseracing.entity.BanToChuc;
 import com.horseracing.entity.ChuNgua;
 import com.horseracing.entity.User;
 import com.horseracing.exception.DuplicateResourceException;
 import com.horseracing.exception.ResourceNotFoundException;
+import com.horseracing.repository.BanToChucRepository;
 import com.horseracing.repository.ChuNguaRepository;
 import com.horseracing.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final ChuNguaRepository chuNguaRepository;
+    private final BanToChucRepository banToChucRepository;
     private final PasswordEncoder passwordEncoder;
     private final NhatKyHoatDongService nhatKyHoatDongService;
 
@@ -54,6 +57,7 @@ public class UserService {
 
         User saved = userRepository.save(user);
         provisionChuNguaIfNeeded(saved);
+        provisionBanToChucIfNeeded(saved);
 
         nhatKyHoatDongService.writeAuditLog(staffId, "CREATE_USER", "User:" + saved.getMaTK(),
                 "Tạo tài khoản mới: " + saved.getTenDangNhap() + " (" + saved.getVaiTro() + ")");
@@ -68,6 +72,7 @@ public class UserService {
         user.setVaiTro(RoleMapper.toVaiTro(role));
         User updated = userRepository.save(user);
         provisionChuNguaIfNeeded(updated);
+        provisionBanToChucIfNeeded(updated);
 
         nhatKyHoatDongService.writeAuditLog(staffId, "CHANGE_ROLE", "User:" + maTK,
                 "Đổi vai trò tài khoản " + updated.getTenDangNhap() + " -> " + role);
@@ -86,6 +91,19 @@ public class UserService {
                     .email(user.getEmail())
                     .build();
             chuNguaRepository.save(chuNgua);
+        }
+    }
+
+    /** Tự động tạo hồ sơ BanToChuc khi tài khoản được gán vai trò Ban tổ chức (mỗi BTC là 1 đơn vị tổ chức đua độc lập). */
+    private void provisionBanToChucIfNeeded(User user) {
+        if (User.VAI_TRO_BAN_TO_CHUC.equals(user.getVaiTro()) && banToChucRepository.findByMaTK(user.getMaTK()).isEmpty()) {
+            BanToChuc banToChuc = BanToChuc.builder()
+                    .maBTC("BTC" + UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase())
+                    .maTK(user.getMaTK())
+                    .hoTen(user.getHoTen())
+                    .boPhan(BanToChuc.BO_PHAN_DIEU_PHOI)
+                    .build();
+            banToChucRepository.save(banToChuc);
         }
     }
 

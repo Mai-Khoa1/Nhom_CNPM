@@ -22,6 +22,10 @@ import RegisterPage from '@/pages/public/RegisterPage';
 import RaceListPage from '@/pages/public/RaceListPage';
 import RaceDetailPage from '@/pages/public/RaceDetailPage';
 import LeaderboardPage from '@/pages/public/LeaderboardPage';
+import HorseListPublicPage from '@/pages/public/HorseListPage';
+import HorseDetailPublicPage from '@/pages/public/HorseDetailPage';
+import JockeyListPublicPage from '@/pages/public/JockeyListPage';
+import JockeyDetailPublicPage from '@/pages/public/JockeyDetailPage';
 
 // Horse Owner Pages
 import MyHorsesPage from '@/pages/horse-owner/MyHorsesPage';
@@ -37,21 +41,21 @@ import RegistrationCreatePage from '@/pages/horse-owner/RegistrationCreatePage';
 import RegistrationDetailPage from '@/pages/horse-owner/RegistrationDetailPage';
 import NotificationsPage from '@/pages/horse-owner/NotificationsPage';
 import ProfilePage from '@/pages/horse-owner/ProfilePage';
+import MyFilesPage from '@/pages/horse-owner/MyFilesPage';
+import FileCreatePage from '@/pages/horse-owner/FileCreatePage';
+import FileEditPage from '@/pages/horse-owner/FileEditPage';
 
 // Admin Pages
 import DashboardPage from '@/pages/admin/DashboardPage';
 import SeasonManagementPage from '@/pages/admin/SeasonManagementPage';
 import RaceManagementPage from '@/pages/admin/RaceManagementPage';
 import LaneManagementPage from '@/pages/admin/LaneManagementPage';
-import HorseManagementPage from '@/pages/admin/HorseManagementPage';
-import JockeyManagementPage from '@/pages/admin/JockeyManagementPage';
 import UpdateRequestManagementPage from '@/pages/admin/UpdateRequestManagementPage';
 import RegistrationManagementPage from '@/pages/admin/RegistrationManagementPage';
 import ResultManagementPage from '@/pages/admin/ResultManagementPage';
 import AdminNotificationsPage from '@/pages/admin/AdminNotificationsPage';
-import FileManagementPage from '@/pages/admin/FileManagementPage';
+import FileRequestManagementPage from '@/pages/admin/FileRequestManagementPage';
 import UserManagementPage from '@/pages/admin/UserManagementPage';
-import RoleManagementPage from '@/pages/admin/RoleManagementPage';
 import AuditLogPage from '@/pages/admin/AuditLogPage';
 import SystemPage from '@/pages/admin/SystemPage';
 
@@ -87,6 +91,10 @@ function App() {
               <Route path="/races" element={<RaceListPage />} />
               <Route path="/races/:id" element={<RaceDetailPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
+              <Route path="/horses" element={<HorseListPublicPage />} />
+              <Route path="/horses/:id" element={<HorseDetailPublicPage />} />
+              <Route path="/jockeys" element={<JockeyListPublicPage />} />
+              <Route path="/jockeys/:id" element={<JockeyDetailPublicPage />} />
             </Route>
 
             {/* Horse Owner Routes */}
@@ -104,27 +112,31 @@ function App() {
               <Route path="/my-registrations/:id" element={<RegistrationDetailPage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/my-files" element={<MyFilesPage />} />
+              <Route path="/my-files/create" element={<FileCreatePage />} />
+              <Route path="/my-files/:id/edit" element={<FileEditPage />} />
             </Route>
 
-            {/* Organizer + Admin Routes */}
+            {/* Organizer + Admin shared - chỉ Dashboard */}
             <Route element={<AuthGuard><RoleGuard allowedRoles={[Role.ORGANIZER, Role.ADMIN]}><AdminLayout /></RoleGuard></AuthGuard>}>
               <Route path="/admin/dashboard" element={<DashboardPage />} />
+            </Route>
+
+            {/* Organizer Only Routes - toàn bộ nghiệp vụ đua (Admin không còn quyền truy cập) */}
+            <Route element={<AuthGuard><RoleGuard allowedRoles={[Role.ORGANIZER]}><AdminLayout /></RoleGuard></AuthGuard>}>
               <Route path="/admin/seasons" element={<SeasonManagementPage />} />
               <Route path="/admin/races" element={<RaceManagementPage />} />
               <Route path="/admin/lanes" element={<LaneManagementPage />} />
-              <Route path="/admin/horses" element={<HorseManagementPage />} />
-              <Route path="/admin/jockeys" element={<JockeyManagementPage />} />
               <Route path="/admin/update-requests" element={<UpdateRequestManagementPage />} />
               <Route path="/admin/registrations" element={<RegistrationManagementPage />} />
               <Route path="/admin/results" element={<ResultManagementPage />} />
               <Route path="/admin/notifications" element={<AdminNotificationsPage />} />
-              <Route path="/admin/files" element={<FileManagementPage />} />
+              <Route path="/admin/file-requests" element={<FileRequestManagementPage />} />
             </Route>
 
-            {/* Admin Only Routes */}
+            {/* Admin Only Routes - chỉ Người dùng, Audit Log, Hệ thống (+ Dashboard ở group trên) */}
             <Route element={<AuthGuard><RoleGuard allowedRoles={[Role.ADMIN]}><AdminLayout /></RoleGuard></AuthGuard>}>
               <Route path="/admin/users" element={<UserManagementPage />} />
-              <Route path="/admin/roles" element={<RoleManagementPage />} />
               <Route path="/admin/audit-logs" element={<AuditLogPage />} />
               <Route path="/admin/system" element={<SystemPage />} />
             </Route>

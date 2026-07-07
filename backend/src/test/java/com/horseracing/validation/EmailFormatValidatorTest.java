@@ -9,8 +9,8 @@ import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 
 /**
- * Kiểm tra M1: email sai định dạng phải bị từ chối (thiếu @, tên miền thiếu dấu chấm...),
- * nhưng tên miền "lạ"/không phải .com/.vn... vẫn được coi là hợp lệ nếu đúng cấu trúc.
+ * Kiểm tra M1: email sai định dạng phải bị từ chối (thiếu @, tên miền thiếu dấu chấm,
+ * TLD không tồn tại trong danh sách phổ biến...).
  */
 class EmailFormatValidatorTest {
 
@@ -39,9 +39,10 @@ class EmailFormatValidatorTest {
     }
 
     @Test
-    void acceptsUnusualButStructurallyValidDomain() {
-        // Tên miền "lạ" (không phải .com/.vn...) nhưng đúng cấu trúc vẫn hợp lệ.
-        assertThat(validator.isValid("aaaahn@jshhs.ncbbc", context)).isTrue();
+    void rejectsUnknownTld() {
+        // Đúng cấu trúc (label.label) nhưng TLD không có thật -> vẫn bị từ chối.
+        assertThat(validator.isValid("aaaahn@jshhs.ncbbc", context)).isFalse();
+        assertThat(validator.isValid("abc@xxx.xxxxx", context)).isFalse();
     }
 
     @Test

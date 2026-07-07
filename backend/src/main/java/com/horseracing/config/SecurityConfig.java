@@ -85,10 +85,10 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
 
                         // Xem công khai (Guest) - danh sách/chi tiết ngựa, jockey, chặng đua, kết quả,
-                        // mùa giải, bảng xếp hạng, file đính kèm (ảnh/scan)
+                        // mùa giải, bảng xếp hạng
                         .requestMatchers(HttpMethod.GET,
                                 "/horses/**", "/jockeys/**", "/races/**", "/results/**",
-                                "/seasons/**", "/rankings/**", "/upload/**").permitAll()
+                                "/seasons/**", "/rankings/**").permitAll()
 
                         // Quản lý người dùng - chỉ Admin (trừ /users/me)
                         .requestMatchers("/users/me").authenticated()
@@ -96,6 +96,9 @@ public class SecurityConfig {
 
                         // Thống kê công khai (dùng cho trang chủ)
                         .requestMatchers(HttpMethod.GET, "/dashboard/stats", "/dashboard/upcoming").permitAll()
+
+                        // Danh sách Ban tổ chức - Chủ ngựa cần để chọn khi tạo ngựa/nài/đăng ký thi đấu
+                        .requestMatchers(HttpMethod.GET, "/organizers/**").authenticated()
 
                         // Nhật ký hoạt động, dashboard - Admin và Ban tổ chức
                         .requestMatchers("/nhat-ky-hoat-dong/**").hasAnyRole("ADMIN", "ORGANIZER")
@@ -108,9 +111,6 @@ public class SecurityConfig {
                             .hasAnyRole("HORSE_OWNER", "ORGANIZER", "ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/horses/**", "/jockeys/**", "/chu-ngua/**")
                             .hasAnyRole("HORSE_OWNER", "ORGANIZER", "ADMIN")
-                        // Duyệt/từ chối/loại ngựa, jockey - chỉ Ban tổ chức và Admin
-                        .requestMatchers(HttpMethod.PATCH, "/horses/**", "/jockeys/**")
-                            .hasAnyRole("ORGANIZER", "ADMIN")
 
                         // Mùa giải, chặng đua, kết quả, làn đua - chỉ Ban tổ chức và Admin được tạo/sửa/xóa
                         .requestMatchers(HttpMethod.POST, "/seasons/**", "/races/**", "/results/**", "/lanes/**")
@@ -127,13 +127,20 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/registrations/**").hasAnyRole("ORGANIZER", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/registrations/**").hasRole("HORSE_OWNER")
                         .requestMatchers(HttpMethod.PATCH, "/registrations/**").hasAnyRole("ORGANIZER", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/registrations/**").hasRole("HORSE_OWNER")
 
                         // Yêu cầu cập nhật thông tin ngựa/nài - chỉ Ban tổ chức/Admin xem và duyệt/từ chối
                         .requestMatchers("/update-requests/**").hasAnyRole("ORGANIZER", "ADMIN")
 
-                        // Thông báo, upload file - mọi người dùng đã đăng nhập (tự xem của mình)
+                        // Thông báo - mọi người dùng đã đăng nhập (tự xem của mình)
                         .requestMatchers("/notifications/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/upload").authenticated()
+
+                        // Tệp tin - chỉ Chủ ngựa (CRUD tệp của chính mình) và Ban tổ chức (xem/duyệt/từ chối).
+                        // Admin KHÔNG có quyền trên API tệp tin, kể cả gọi trực tiếp qua URL.
+                        .requestMatchers(HttpMethod.POST, "/upload").hasRole("HORSE_OWNER")
+                        .requestMatchers(HttpMethod.PUT, "/upload/**").hasRole("HORSE_OWNER")
+                        .requestMatchers(HttpMethod.DELETE, "/upload/**").hasRole("HORSE_OWNER")
+                        .requestMatchers(HttpMethod.GET, "/upload/**").hasAnyRole("HORSE_OWNER", "ORGANIZER")
 
                         .anyRequest().authenticated()
                 );
