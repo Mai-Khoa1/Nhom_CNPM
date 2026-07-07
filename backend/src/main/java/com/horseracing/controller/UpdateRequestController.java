@@ -33,26 +33,35 @@ public class UpdateRequestController {
     public ResponseEntity<ApiResponse<PageResponse<UpdateRequestResponseDTO>>> getAll(
             Pageable pageable,
             @RequestParam(required = false) UpdateRequestStatus status,
-            @RequestParam(required = false) UpdateTargetType targetType) {
-        return ResponseEntity.ok(ApiResponse.success(updateRequestService.getAll(pageable, status, targetType)));
+            @RequestParam(required = false) UpdateTargetType targetType,
+            Authentication authentication) {
+        boolean isAdmin = currentUserService.hasRole(authentication, "ADMIN");
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
+        return ResponseEntity.ok(ApiResponse.success(updateRequestService.getAll(pageable, status, targetType, isAdmin, organizerScopeId)));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<UpdateRequestResponseDTO>> getById(@PathVariable String id) {
-        return ResponseEntity.ok(ApiResponse.success(updateRequestService.getById(id)));
+    public ResponseEntity<ApiResponse<UpdateRequestResponseDTO>> getById(@PathVariable String id, Authentication authentication) {
+        boolean isAdmin = currentUserService.hasRole(authentication, "ADMIN");
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
+        return ResponseEntity.ok(ApiResponse.success(updateRequestService.getById(id, isAdmin, organizerScopeId)));
     }
 
     @PatchMapping("/{id}/approve")
     public ResponseEntity<ApiResponse<UpdateRequestResponseDTO>> approve(@PathVariable String id, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
-        return ResponseEntity.ok(ApiResponse.success(updateRequestService.approve(id, staffId), "Đã duyệt yêu cầu cập nhật"));
+        boolean isAdmin = currentUserService.hasRole(authentication, "ADMIN");
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
+        return ResponseEntity.ok(ApiResponse.success(updateRequestService.approve(id, staffId, isAdmin, organizerScopeId), "Đã duyệt yêu cầu cập nhật"));
     }
 
     @PatchMapping("/{id}/reject")
     public ResponseEntity<ApiResponse<UpdateRequestResponseDTO>> reject(
             @PathVariable String id, @RequestBody(required = false) Map<String, String> body, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
+        boolean isAdmin = currentUserService.hasRole(authentication, "ADMIN");
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
         String reason = body != null ? body.get("reason") : null;
-        return ResponseEntity.ok(ApiResponse.success(updateRequestService.reject(id, reason, staffId), "Đã từ chối yêu cầu cập nhật"));
+        return ResponseEntity.ok(ApiResponse.success(updateRequestService.reject(id, reason, staffId, isAdmin, organizerScopeId), "Đã từ chối yêu cầu cập nhật"));
     }
 }

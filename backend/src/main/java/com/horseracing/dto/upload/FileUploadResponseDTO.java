@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -16,4 +18,9 @@ public class FileUploadResponseDTO {
     private String fileType;
     private String fileCategory;
     private long fileSize;
+    private String targetType;
+    private String targetId;
+    private String ownerId;
+    private String ownerName;
+    private LocalDateTime createdAt;
 }

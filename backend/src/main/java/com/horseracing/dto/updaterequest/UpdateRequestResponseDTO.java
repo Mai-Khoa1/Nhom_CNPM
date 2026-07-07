@@ -23,6 +23,8 @@ public class UpdateRequestResponseDTO {
     private String ownerName;
     private Map<String, Object> oldData;
     private Map<String, Object> newData;
+    /** "CAP_NHAT" (sửa) hoặc "XOA" (xóa) - loại thao tác sẽ áp dụng khi yêu cầu được duyệt. */
+    private String action;
     private UpdateRequestStatus status;
     private String rejectReason;
     private LocalDateTime createdAt;

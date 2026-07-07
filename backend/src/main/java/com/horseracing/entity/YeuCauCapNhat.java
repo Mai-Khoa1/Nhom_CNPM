@@ -19,10 +19,15 @@ public class YeuCauCapNhat {
 
     public static final String LOAI_NGUA = "NGUA";
     public static final String LOAI_NAI_NGUA = "NAI_NGUA";
+    public static final String LOAI_TEP_TIN = "TEP_TIN";
 
     public static final String TRANG_THAI_CHO_DUYET = "Chờ duyệt";
     public static final String TRANG_THAI_DA_DUYET = "Đã duyệt";
     public static final String TRANG_THAI_TU_CHOI = "Từ chối";
+
+    /** hanhDong: loại thao tác yêu cầu áp dụng khi được duyệt - CAP_NHAT (sửa) hoặc XOA (xóa). */
+    public static final String HANH_DONG_CAP_NHAT = "CAP_NHAT";
+    public static final String HANH_DONG_XOA = "XOA";
 
     @Id
     @Column(name = "maYeuCau", length = 50)
@@ -37,6 +42,10 @@ public class YeuCauCapNhat {
     @Column(name = "maTK", nullable = false, length = 50)
     private String maTK;
 
+    /** Ban tổ chức cần duyệt yêu cầu này (null với yêu cầu tệp tin ở giai đoạn hiện tại). */
+    @Column(name = "maBTC", length = 50)
+    private String maBTC;
+
     @Column(name = "duLieuCu", nullable = false, columnDefinition = "TEXT")
     private String duLieuCu;
 
@@ -45,6 +54,9 @@ public class YeuCauCapNhat {
 
     @Column(name = "trangThai", length = 50)
     private String trangThai;
+
+    @Column(name = "hanhDong", length = 20)
+    private String hanhDong;
 
     @Column(name = "lyDoTuChoi", length = 255)
     private String lyDoTuChoi;
@@ -59,6 +71,9 @@ public class YeuCauCapNhat {
     protected void onCreate() {
         if (trangThai == null) {
             trangThai = TRANG_THAI_CHO_DUYET;
+        }
+        if (hanhDong == null) {
+            hanhDong = HANH_DONG_CAP_NHAT;
         }
         if (ngayTao == null) {
             ngayTao = LocalDateTime.now();

@@ -29,6 +29,11 @@ public class TepTin {
     @Column(name = "loaiFile", length = 50)
     private String loaiFile;
 
+    /** Content-Type gốc của file (image/jpeg, application/pdf...) - dùng để trả đúng header khi phục vụ tải/xem. */
+    @Column(name = "contentType", length = 100)
+    private String contentType;
+
+    /** "DANG_KY" - tệp tin gắn với 1 lần đăng ký thi đấu cụ thể (xem DangKyThiDau), không gắn thẳng vào Ngựa/Nài nữa. */
     @Column(name = "loaiDoiTuong", length = 50)
     private String loaiDoiTuong;
 
@@ -37,6 +42,9 @@ public class TepTin {
 
     @Column(name = "kichThuoc")
     private Long kichThuoc;
+
+    @Column(name = "maTK", length = 50)
+    private String maTK;
 
     @Column(name = "ngayTao", updatable = false)
     private LocalDateTime ngayTao;
