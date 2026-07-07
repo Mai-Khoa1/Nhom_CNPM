@@ -5,7 +5,7 @@ import { laneApi } from '@/api/laneApi';
 import { queryKeys } from '@/constants/queryKeys';
 import { RaceResponse } from '@/types/race';
 import { RegistrationResponse } from '@/types/registration';
-import { RegistrationStatus } from '@/types/enums';
+import { RegistrationStatus, RaceStatus } from '@/types/enums';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -76,6 +76,8 @@ const LaneManagementPage = () => {
   const races: RaceResponse[] = racesData?.data?.data?.content ?? [];
   const registrations: RegistrationResponse[] = registrationsData?.data?.data?.content ?? [];
   const approvedRegs = registrations.filter((r) => r.status === RegistrationStatus.APPROVED);
+  const selectedRace = races.find((r) => r.id === selectedRaceId);
+  const canEditLanes = selectedRace?.status === RaceStatus.OPEN;
 
   const handleRaceSelect = (raceId: string) => {
     setSelectedRaceId(raceId);
@@ -112,6 +114,7 @@ const LaneManagementPage = () => {
   };
 
   const isMutating = assignMutation.isPending || updateMutation.isPending || removeMutation.isPending;
+  const inputsDisabled = isMutating || !canEditLanes;
 
   return (
     <div>
@@ -151,10 +154,16 @@ const LaneManagementPage = () => {
           </div>
         ) : (
           <div>
-            <p className="text-sm text-muted-foreground mb-3">
-              Nhập số làn cho từng đăng ký được duyệt rồi nhấn <strong>Lưu</strong>.
-              Để xóa làn đã gán, nhấn nút <Trash2 className="inline h-3 w-3" />.
-            </p>
+            {canEditLanes ? (
+              <p className="text-sm text-muted-foreground mb-3">
+                Nhập số làn cho từng đăng ký được duyệt rồi nhấn <strong>Lưu</strong>.
+                Để xóa làn đã gán, nhấn nút <Trash2 className="inline h-3 w-3" />.
+              </p>
+            ) : (
+              <p className="text-sm text-amber-600 mb-3">
+                Cuộc đua đã ở trạng thái {selectedRace?.status} - không thể sửa làn đua nữa (chỉ phân làn được khi còn Mở đăng ký).
+              </p>
+            )}
             <div className="rounded-md border overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-muted">
@@ -190,7 +199,7 @@ const LaneManagementPage = () => {
                           value={getLaneInput(reg)}
                           onChange={(e) => setLaneInput(reg.id, e.target.value)}
                           className="w-24"
-                          disabled={isMutating}
+                          disabled={inputsDisabled}
                         />
                       </td>
                       <td className="p-3">
@@ -199,7 +208,7 @@ const LaneManagementPage = () => {
                             size="sm"
                             className="bg-[#D4A017] hover:bg-[#C8940A] text-white h-8 px-3"
                             onClick={() => handleSaveLane(reg)}
-                            disabled={isMutating}
+                            disabled={inputsDisabled}
                           >
                             {(assignMutation.isPending || updateMutation.isPending) ? (
                               <Loader2 className="h-3 w-3 animate-spin" />
@@ -213,7 +222,7 @@ const LaneManagementPage = () => {
                               variant="outline"
                               className="h-8 px-3 text-red-500 hover:text-red-600"
                               onClick={() => handleRemoveLane(reg)}
-                              disabled={isMutating}
+                              disabled={inputsDisabled}
                               title="Xóa làn đua"
                             >
                               {removeMutation.isPending ? (

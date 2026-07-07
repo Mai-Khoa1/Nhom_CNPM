@@ -39,20 +39,29 @@ public class ScheduleController {
             Pageable pageable,
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) RaceStatus status,
-            @RequestParam(required = false) String seasonId) {
-        return ResponseEntity.ok(ApiResponse.success(scheduleService.getAllRaces(pageable, keyword, status, seasonId)));
+            @RequestParam(required = false) String seasonId,
+            @RequestParam(required = false) String organizerId,
+            Authentication authentication) {
+        // ORGANIZER luôn chỉ thấy race của chính BTC mình (bỏ qua organizerId client gửi lên nếu có);
+        // các role khác (Chủ ngựa chọn BTC khi đăng ký thi đấu, khách xem công khai...) được lọc theo
+        // organizerId nếu có chỉ định, không thì thấy tất cả.
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
+        String effectiveOrganizerId = organizerScopeId != null ? organizerScopeId : organizerId;
+        return ResponseEntity.ok(ApiResponse.success(scheduleService.getAllRaces(pageable, keyword, status, seasonId, effectiveOrganizerId)));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ScheduleResponseDTO>> getRaceById(@PathVariable String id) {
-        return ResponseEntity.ok(ApiResponse.success(scheduleService.getRaceById(id)));
+    public ResponseEntity<ApiResponse<ScheduleResponseDTO>> getRaceById(@PathVariable String id, Authentication authentication) {
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
+        return ResponseEntity.ok(ApiResponse.success(scheduleService.getRaceById(id, organizerScopeId)));
     }
 
     @PostMapping
     public ResponseEntity<ApiResponse<ScheduleResponseDTO>> createRace(
             @Valid @RequestBody ScheduleRequestDTO dto, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
-        ScheduleResponseDTO created = scheduleService.createRace(dto, staffId);
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
+        ScheduleResponseDTO created = scheduleService.createRace(dto, staffId, organizerScopeId);
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(created, "Tạo chặng đua thành công"));
     }
 
@@ -60,13 +69,15 @@ public class ScheduleController {
     public ResponseEntity<ApiResponse<ScheduleResponseDTO>> updateRace(
             @PathVariable String id, @Valid @RequestBody ScheduleRequestDTO dto, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
-        return ResponseEntity.ok(ApiResponse.success(scheduleService.updateRace(id, dto, staffId), "Cập nhật chặng đua thành công"));
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
+        return ResponseEntity.ok(ApiResponse.success(scheduleService.updateRace(id, dto, staffId, organizerScopeId), "Cập nhật chặng đua thành công"));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteRace(@PathVariable String id, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
-        scheduleService.deleteRace(id, staffId);
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
+        scheduleService.deleteRace(id, staffId, organizerScopeId);
         return ResponseEntity.ok(ApiResponse.success(null, "Xóa chặng đua thành công"));
     }
 
@@ -74,13 +85,24 @@ public class ScheduleController {
     public ResponseEntity<ApiResponse<ScheduleResponseDTO>> publishRace(
             @PathVariable String id, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
-        return ResponseEntity.ok(ApiResponse.success(scheduleService.publishRace(id, staffId), "Đã công bố chặng đua"));
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
+        return ResponseEntity.ok(ApiResponse.success(scheduleService.publishRace(id, staffId, organizerScopeId), "Đã công bố chặng đua"));
+    }
+
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<ApiResponse<ScheduleResponseDTO>> cancelRace(
+            @PathVariable String id, @RequestBody(required = false) java.util.Map<String, String> body, Authentication authentication) {
+        String staffId = currentUserService.resolveMaTK(authentication);
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
+        String reason = body != null ? body.get("reason") : null;
+        return ResponseEntity.ok(ApiResponse.success(scheduleService.cancelRace(id, reason, staffId, organizerScopeId), "Đã hủy chặng đua"));
     }
 
     @GetMapping("/{id}/registrations")
     public ResponseEntity<ApiResponse<PageResponse<RegistrationResponseDTO>>> getRegistrations(
-            @PathVariable String id, Pageable pageable) {
-        return ResponseEntity.ok(ApiResponse.success(registrationService.getRegistrationsByRace(id, pageable)));
+            @PathVariable String id, Pageable pageable, Authentication authentication) {
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
+        return ResponseEntity.ok(ApiResponse.success(registrationService.getRegistrationsByRace(id, pageable, organizerScopeId)));
     }
 
     @GetMapping("/{id}/lanes")

@@ -21,7 +21,9 @@ public class ScheduleResponseDTO {
     private String location;
     private Integer distance;
     private Integer maxHorses;
+    private Integer minHorses;
     private long registeredCount;
+    private long approvedCount;
     private RaceStatus status;
     private String description;
     private LocalDateTime createdAt;

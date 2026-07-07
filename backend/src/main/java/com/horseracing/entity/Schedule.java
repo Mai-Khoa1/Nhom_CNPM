@@ -58,6 +58,9 @@ public class Schedule {
     @Column(name = "soNguaToiDa")
     private Integer soNguaToiDa;
 
+    @Column(name = "soLuongToiThieu")
+    private Integer soLuongToiThieu;
+
     @Column(name = "trangThai", length = 50)
     private String trangThai;
 
@@ -67,6 +70,9 @@ public class Schedule {
     @Column(name = "ngayTao", updatable = false)
     private LocalDateTime ngayTao;
 
+    /** Số đăng ký ĐÃ DUYỆT tối thiểu mặc định để cho phép chuyển OPEN -> ONGOING nếu không chỉ định. */
+    public static final int DEFAULT_SO_LUONG_TOI_THIEU = 2;
+
     @PrePersist
     protected void onCreate() {
         if (trangThai == null) {
@@ -74,6 +80,9 @@ public class Schedule {
         }
         if (ngayTao == null) {
             ngayTao = LocalDateTime.now();
+        }
+        if (soLuongToiThieu == null) {
+            soLuongToiThieu = DEFAULT_SO_LUONG_TOI_THIEU;
         }
     }
 }

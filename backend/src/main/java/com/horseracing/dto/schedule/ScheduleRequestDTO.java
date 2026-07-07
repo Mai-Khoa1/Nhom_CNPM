@@ -25,5 +25,8 @@ public class ScheduleRequestDTO {
 
     private Integer maxHorses;
 
+    /** Số đăng ký ĐÃ DUYỆT tối thiểu để cho phép bắt đầu đua (OPEN -> ONGOING). Bỏ trống dùng mặc định 2. */
+    private Integer minHorses;
+
     private String description;
 }
