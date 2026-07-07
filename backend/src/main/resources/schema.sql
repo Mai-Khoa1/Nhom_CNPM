@@ -108,7 +108,6 @@ CREATE TABLE IF NOT EXISTS Jockey (
     quocTich VARCHAR(50),
     kinhNghiem INT,
     soGiayPhep VARCHAR(50) UNIQUE,
-    trangThai ENUM('Chờ duyệt', 'Đã duyệt', 'Bị từ chối', 'Đang hoạt động', 'Không hoạt động') DEFAULT 'Chờ duyệt',
     canNang DOUBLE COMMENT 'Cân nặng hiện tại (kg)',
     bmi DOUBLE COMMENT 'Chỉ số BMI',
     tyLeThang DOUBLE COMMENT 'Tỷ lệ thắng (%)',
@@ -129,7 +128,6 @@ CREATE TABLE IF NOT EXISTS Ngua (
     mauLong VARCHAR(30),
     troiLuong DOUBLE,
     trangThaiSucKhoe VARCHAR(255),
-    trangThai ENUM('Chờ duyệt', 'Đủ điều kiện', 'Bị từ chối', 'Bị loại') DEFAULT 'Chờ duyệt',
     ngayTao DATETIME DEFAULT CURRENT_TIMESTAMP,
     ngayCapNhat DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (maChuNgua) REFERENCES ChuNgua(maChuNgua) ON DELETE RESTRICT
@@ -159,14 +157,15 @@ CREATE TABLE IF NOT EXISTS DangKyThiDau (
     lanChay INT,
     soLan INT COMMENT 'Số làn đua được phân (lane number)',
     ngayGanLan DATETIME COMMENT 'Thời điểm gán làn đua',
-    trangThai ENUM('Chờ duyệt', 'Đã duyệt', 'Từ chối') DEFAULT 'Chờ duyệt',
-    lyDoTuChoi VARCHAR(255),
+    trangThai ENUM('Chờ duyệt', 'Đã duyệt', 'Từ chối', 'Đã hủy', 'Bị loại') DEFAULT 'Chờ duyệt',
+    lyDo VARCHAR(255) COMMENT 'Lý do từ chối/hủy/loại - dùng chung, tùy theo trangThai hiện tại',
     ghiChu VARCHAR(255),
     FOREIGN KEY (maChangDua) REFERENCES ChangDua(maChangDua) ON DELETE CASCADE,
     FOREIGN KEY (maNgua) REFERENCES Ngua(maNgua) ON DELETE RESTRICT,
-    FOREIGN KEY (maNaiNgua) REFERENCES Jockey(maNaiNgua) ON DELETE RESTRICT,
-    UNIQUE KEY unique_ngua_moi_chang (maChangDua, maNgua),
-    UNIQUE KEY unique_jockey_moi_chang (maChangDua, maNaiNgua)
+    FOREIGN KEY (maNaiNgua) REFERENCES Jockey(maNaiNgua) ON DELETE RESTRICT
+    -- Không còn UNIQUE KEY cứng (maChangDua, maNgua)/(maChangDua, maNaiNgua): 1 lần đăng ký có thể bị
+    -- Từ chối/Đã hủy rồi đăng ký lại cho CÙNG race đó - ràng buộc "không trùng khi đang active" được
+    -- kiểm tra ở tầng service (RegistrationService.ACTIVE_STATUSES).
 );
 
 -- Bảng KetQuaThiDau
@@ -208,36 +207,89 @@ CREATE TABLE IF NOT EXISTS LuatDiem (
     UNIQUE KEY unique_luatdiem_hang (maMuaGiai, hang)
 );
 
--- Bảng TepTin - lưu trữ file upload (ảnh ngựa/jockey, hồ sơ sức khỏe...)
+-- Bảng TepTin - lưu trữ file đính kèm theo TỪNG LẦN ĐĂNG KÝ thi đấu (ảnh ngựa/nài, hồ sơ sức khỏe,
+-- giấy phép nài...). maTK: chủ sở hữu tệp (chủ ngựa đã tải lên). Không còn duyệt file riêng lẻ - Ban
+-- tổ chức duyệt cả bộ hồ sơ đăng ký (DangKyThiDau) chứa các file này.
 CREATE TABLE IF NOT EXISTS TepTin (
     maTepTin VARCHAR(50) PRIMARY KEY,
     tenFile VARCHAR(255) NOT NULL,
     duongDan VARCHAR(500) NOT NULL,
-    loaiFile VARCHAR(50) COMMENT 'FileType: HORSE_PHOTO, JOCKEY_AVATAR...',
-    loaiDoiTuong VARCHAR(50) COMMENT 'HORSE, JOCKEY, HEALTH_RECORD, DOPING_TEST',
-    maDoiTuong VARCHAR(50),
+    loaiFile VARCHAR(50) COMMENT 'FileType: HORSE_PHOTO, JOCKEY_AVATAR, HEALTH_CERTIFICATE, JOCKEY_LICENSE...',
+    contentType VARCHAR(100) COMMENT 'MIME type gốc (image/jpeg, application/pdf...) - dùng để trả đúng header khi phục vụ file',
+    loaiDoiTuong VARCHAR(50) COMMENT 'DANG_KY - tệp tin gắn với 1 lần đăng ký thi đấu cụ thể',
+    maDoiTuong VARCHAR(50) COMMENT 'maDangKy tương ứng',
     kichThuoc BIGINT,
+    maTK VARCHAR(50) COMMENT 'Tài khoản chủ ngựa đã tải file lên',
     ngayTao DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Bảng YeuCauCapNhat - lưu yêu cầu chủ ngựa sửa thông tin Ngựa/Nài đã được duyệt trước đó,
+-- Thêm cột maTK cho DB đã tồn tại từ trước (idempotent qua continue-on-error=true như mọi ALTER khác
+-- trong file này). trangThai (duyệt file riêng lẻ) không còn cần thiết - bỏ.
+ALTER TABLE TepTin ADD COLUMN maTK VARCHAR(50) COMMENT 'Tài khoản chủ ngựa đã tải file lên';
+ALTER TABLE TepTin ADD COLUMN contentType VARCHAR(100) COMMENT 'MIME type gốc';
+ALTER TABLE TepTin DROP COLUMN trangThai;
+
+-- Bảng YeuCauCapNhat - lưu yêu cầu chủ ngựa sửa/xóa thông tin Ngựa/Nài/Tệp tin đã được duyệt trước đó,
 -- chờ Ban tổ chức duyệt lại. Dữ liệu cũ/mới lưu dạng JSON để hiển thị so sánh; dữ liệu gốc
--- trong bảng Ngua/Jockey chỉ bị ghi đè khi yêu cầu được DUYỆT.
+-- trong bảng Ngua/Jockey/TepTin chỉ bị ghi đè (hoặc xóa) khi yêu cầu được DUYỆT.
 CREATE TABLE IF NOT EXISTS YeuCauCapNhat (
     maYeuCau VARCHAR(50) PRIMARY KEY,
-    loaiDoiTuong ENUM('NGUA', 'NAI_NGUA') NOT NULL,
-    maDoiTuong VARCHAR(50) NOT NULL COMMENT 'maNgua hoặc maNaiNgua tương ứng',
+    loaiDoiTuong ENUM('NGUA', 'NAI_NGUA', 'TEP_TIN') NOT NULL,
+    maDoiTuong VARCHAR(50) NOT NULL COMMENT 'maNgua/maNaiNgua/maTepTin tương ứng',
     maTK VARCHAR(50) NOT NULL COMMENT 'Tài khoản chủ ngựa gửi yêu cầu',
     duLieuCu TEXT NOT NULL COMMENT 'Snapshot JSON dữ liệu trước khi sửa',
     duLieuMoi TEXT NOT NULL COMMENT 'Snapshot JSON dữ liệu đề xuất sửa',
     trangThai ENUM('Chờ duyệt', 'Đã duyệt', 'Từ chối') DEFAULT 'Chờ duyệt',
+    hanhDong ENUM('CAP_NHAT', 'XOA') DEFAULT 'CAP_NHAT' COMMENT 'Loại thao tác áp dụng khi được duyệt',
     lyDoTuChoi VARCHAR(255),
     ngayTao DATETIME DEFAULT CURRENT_TIMESTAMP,
     ngayXuLy DATETIME,
     FOREIGN KEY (maTK) REFERENCES TaiKhoan(maTK) ON DELETE CASCADE
 );
 
+-- Thêm cột hanhDong và mở rộng ENUM loaiDoiTuong cho DB đã tồn tại từ trước (MODIFY COLUMN tự idempotent;
+-- ADD COLUMN dựa vào continue-on-error=true như trên).
+ALTER TABLE YeuCauCapNhat MODIFY COLUMN loaiDoiTuong ENUM('NGUA', 'NAI_NGUA', 'TEP_TIN') NOT NULL;
+ALTER TABLE YeuCauCapNhat ADD COLUMN hanhDong ENUM('CAP_NHAT', 'XOA') DEFAULT 'CAP_NHAT' COMMENT 'Loại thao tác áp dụng khi được duyệt';
+ALTER TABLE YeuCauCapNhat ADD COLUMN maBTC VARCHAR(50) COMMENT 'Ban tổ chức cần duyệt yêu cầu này';
+
+-- ===== Bước 4: mở rộng DangKyThiDau (CANCELLED/DISQUALIFIED) + bỏ UNIQUE KEY cứng cho DB đã tồn tại =====
+ALTER TABLE DangKyThiDau MODIFY COLUMN trangThai ENUM('Chờ duyệt', 'Đã duyệt', 'Từ chối', 'Đã hủy', 'Bị loại') DEFAULT 'Chờ duyệt';
+ALTER TABLE DangKyThiDau CHANGE COLUMN lyDoTuChoi lyDo VARCHAR(255);
+-- unique_ngua_moi_chang/unique_jockey_moi_chang là index duy nhất có maChangDua làm cột đầu, đang được
+-- FOREIGN KEY (maChangDua) dùng làm index hỗ trợ - phải tạo index thường thay thế TRƯỚC khi xóa 2 UNIQUE
+-- KEY đó, nếu không MySQL báo lỗi 1553 "needed in a foreign key constraint" khi xóa index còn lại cuối cùng.
+CREATE INDEX idx_dangkythidau_changdua ON DangKyThiDau (maChangDua);
+ALTER TABLE DangKyThiDau DROP INDEX unique_ngua_moi_chang;
+ALTER TABLE DangKyThiDau DROP INDEX unique_jockey_moi_chang;
+
+-- ===== Multi-tenancy theo Ban tổ chức: mỗi Mùa giải thuộc về đúng 1 Ban tổ chức (bảng BanToChuc =====
+-- đã có sẵn phía trên). ADD COLUMN dựa vào spring.sql.init.continue-on-error=true (idempotent như trên).
+-- Không thêm FOREIGN KEY ràng buộc bằng ALTER (constraint tên tự sinh sẽ bị thêm lại mỗi lần khởi động
+-- vì không idempotent) - giống cách TepTin.maTK không có FK, ràng buộc được đảm bảo ở tầng service.
+ALTER TABLE MuaGiai ADD COLUMN maBTC VARCHAR(50) COMMENT 'Ban tổ chức sở hữu mùa giải này (multi-tenancy)';
+
+-- ===== Tách "hồ sơ" (Ngựa/Nài) khỏi "duyệt thi đấu": bỏ trạng thái duyệt ở cấp hồ sơ, việc duyệt =====
+-- chỉ còn diễn ra ở cấp đăng ký thi đấu (DangKyThiDau.trangThai). DROP COLUMN không idempotent - dựa
+-- vào continue-on-error=true, lần đầu chạy sẽ xóa cột thành công, các lần sau lỗi "unknown column"
+-- và bị bỏ qua (giống cơ chế ADD COLUMN chỉ chạy 1 lần thành công ở trên).
+ALTER TABLE Ngua DROP COLUMN trangThai;
+ALTER TABLE Jockey DROP COLUMN trangThai;
+
+-- Ban tổ chức cần duyệt 1 yêu cầu cập nhật thông tin ngựa/nài (xác định qua đăng ký APPROVED đang
+-- tham chiếu ngựa/nài đó - 1 ngựa có thể có nhiều yêu cầu song song tới nhiều BTC khác nhau).
+ALTER TABLE YeuCauCapNhat ADD COLUMN maBTC VARCHAR(50) COMMENT 'Ban tổ chức cần duyệt yêu cầu này';
+
 -- Các Index tối ưu hóa truy vấn
 CREATE INDEX idx_ngua_ten ON Ngua(tenNgua);
 CREATE INDEX idx_jockey_ten ON Jockey(hoTen);
+
+-- ===== Sửa lỗi vòng đời Cuộc đua (kiểm thử thực tế): thêm số lượng đăng ký tối thiểu để cho phép =====
+-- chuyển OPEN -> ONGOING (mặc định 2 - không thể đua với 0 hoặc 1 ngựa).
+ALTER TABLE ChangDua ADD COLUMN soLuongToiThieu INT DEFAULT 2 COMMENT 'Số đăng ký ĐÃ DUYỆT tối thiểu để cho phép bắt đầu đua (minHorses)';
 CREATE INDEX idx_changdua_ngay ON ChangDua(ngayThiDau);
+
+-- ===== Lỗi 6: xóa mềm (soft-delete) Ngựa/Nài đã từng có đăng ký thi đấu, tránh lỗi FK constraint =====
+-- hiển thị thẳng ra người dùng. Hồ sơ CHƯA từng đăng ký vẫn xóa cứng như trước (không cần cột này).
+ALTER TABLE Ngua ADD COLUMN trangThai ENUM('Hoạt động', 'Ngừng hoạt động') DEFAULT 'Hoạt động' COMMENT 'Xóa mềm - Ngừng hoạt động khi đã từng có đăng ký thi đấu';
+ALTER TABLE Jockey ADD COLUMN trangThai ENUM('Hoạt động', 'Ngừng hoạt động') DEFAULT 'Hoạt động' COMMENT 'Xóa mềm - Ngừng hoạt động khi đã từng có đăng ký thi đấu';

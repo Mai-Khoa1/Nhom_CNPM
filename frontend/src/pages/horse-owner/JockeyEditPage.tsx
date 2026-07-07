@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { jockeySchema, JockeyFormData } from '@/schemas/jockeySchema';
 import { jockeyApi } from '@/api/jockeyApi';
 import { queryKeys } from '@/constants/queryKeys';
-import { Gender, JockeyStatus } from '@/types/enums';
+import { Gender } from '@/types/enums';
 import { handleApiError } from '@/utils/apiHelpers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,11 +43,7 @@ const JockeyEditPage = () => {
   const mutation = useMutation({
     mutationFn: (formData: JockeyFormData) => jockeyApi.update(id ?? '', formData),
     onSuccess: () => {
-      if (jockey?.status === JockeyStatus.APPROVED || jockey?.status === JockeyStatus.ACTIVE) {
-        toast.success('Yêu cầu cập nhật đã được gửi, đang chờ Ban tổ chức duyệt!');
-      } else {
-        toast.success('Cập nhật nài thành công!');
-      }
+      toast.success('Đã lưu thay đổi. Nếu nài đang thi đấu chính thức ở Ban tổ chức nào, thay đổi sẽ chờ Ban tổ chức đó duyệt trước khi áp dụng.');
       queryClient.invalidateQueries({ queryKey: queryKeys.jockeys.all });
       navigate('/my-jockeys');
     },

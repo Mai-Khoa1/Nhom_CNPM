@@ -6,7 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { getRaceStatusColor } from '@/utils/getStatusColor';
 import { formatDateTime } from '@/utils/formatDate';
-import { Trophy, Flag, Users, ClipboardList, AlertCircle } from 'lucide-react';
+import { Trophy, Flag, ClipboardList, AlertCircle } from 'lucide-react';
 
 const DashboardPage = () => {
   const { data, isLoading, isError } = useQuery({
@@ -37,8 +37,6 @@ const DashboardPage = () => {
     { label: 'Tổng nài', value: stats?.totalJockeys, icon: <span className="text-2xl">🏇</span>, color: 'bg-blue-50 dark:bg-blue-900/20' },
     { label: 'Tổng cuộc đua', value: stats?.totalRaces, icon: <Flag className="h-6 w-6 text-green-600" />, color: 'bg-green-50 dark:bg-green-900/20' },
     { label: 'Mùa giải', value: stats?.totalSeasons, icon: <Trophy className="h-6 w-6 text-purple-600" />, color: 'bg-purple-50 dark:bg-purple-900/20' },
-    { label: 'Ngựa chờ duyệt', value: stats?.pendingHorses, icon: <AlertCircle className="h-6 w-6 text-yellow-600" />, color: 'bg-yellow-50 dark:bg-yellow-900/20' },
-    { label: 'Nài chờ duyệt', value: stats?.pendingJockeys, icon: <Users className="h-6 w-6 text-orange-600" />, color: 'bg-orange-50 dark:bg-orange-900/20' },
     { label: 'Đăng ký chờ duyệt', value: stats?.pendingRegistrations, icon: <ClipboardList className="h-6 w-6 text-red-600" />, color: 'bg-red-50 dark:bg-red-900/20' },
     { label: 'Cuộc đua sắp tới', value: stats?.upcomingRaces, icon: <Flag className="h-6 w-6 text-indigo-600" />, color: 'bg-indigo-50 dark:bg-indigo-900/20' },
   ];

@@ -1,6 +1,8 @@
 export const queryKeys = {
   auth: { me: ['auth', 'me'] as const },
 
+  organizers: { all: ['organizers'] as const },
+
   horses: {
     all: ['horses'] as const,
     list: (params: object) => ['horses', 'list', params] as const,
@@ -75,6 +77,8 @@ export const queryKeys = {
   },
 
   files: {
-    list: (fileType: string) => ['files', 'list', fileType] as const,
+    all: ['files'] as const,
+    list: (params: object) => ['files', 'list', params] as const,
+    detail: (id: string) => ['files', id] as const,
   },
 };

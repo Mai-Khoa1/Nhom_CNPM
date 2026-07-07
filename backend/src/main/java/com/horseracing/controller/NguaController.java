@@ -1,25 +1,27 @@
 package com.horseracing.controller;
 
 import com.horseracing.dto.common.ApiResponse;
-import com.horseracing.dto.common.HorseStatus;
 import com.horseracing.dto.common.PageResponse;
 import com.horseracing.dto.ngua.NguaRequestDTO;
 import com.horseracing.dto.ngua.NguaResponseDTO;
 import com.horseracing.dto.result.RaceHistoryItemDTO;
+import com.horseracing.entity.TepTin;
+import com.horseracing.exception.ResourceNotFoundException;
 import com.horseracing.service.CurrentUserService;
 import com.horseracing.service.NguaService;
+import com.horseracing.service.UploadService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * NguaController - quản lý ngựa đua (bảng Ngua). Base path /horses khớp frontend.
@@ -31,31 +33,51 @@ import java.util.Map;
 public class NguaController {
 
     private final NguaService nguaService;
+    private final UploadService uploadService;
     private final CurrentUserService currentUserService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<NguaResponseDTO>>> getAllHorses(
             Pageable pageable,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) HorseStatus status,
             @RequestParam(required = false) String ownerId,
+            @RequestParam(defaultValue = "false") boolean includeInactive,
             Authentication authentication) {
         String effectiveOwnerId = ownerId;
-        HorseStatus effectiveStatus = status;
         if (currentUserService.hasRole(authentication, "HORSE_OWNER")) {
             // Chủ ngựa chỉ được xem ngựa của chính mình, bỏ qua ownerId client gửi lên.
             effectiveOwnerId = currentUserService.resolveMaTK(authentication);
-        } else if (!currentUserService.isPrivileged(authentication)) {
-            // Khách/người xem chưa đăng nhập chỉ được xem ngựa đã duyệt.
-            effectiveStatus = HorseStatus.APPROVED;
         }
+        // Mục 4.2: khách/SPECTATOR (không phải chủ ngựa, không phải ADMIN/ORGANIZER) chỉ thấy ngựa đã
+        // có ít nhất 1 đăng ký thi đấu được duyệt - chưa đăng ký ở đâu thì không hiển thị ra ngoài.
+        boolean publicOnly = isPublicViewer(authentication);
         return ResponseEntity.ok(ApiResponse.success(
-                nguaService.getAllHorses(pageable, keyword, effectiveStatus, effectiveOwnerId)));
+                nguaService.getAllHorses(pageable, keyword, effectiveOwnerId, publicOnly, includeInactive)));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<NguaResponseDTO>> getHorseById(@PathVariable String id) {
-        return ResponseEntity.ok(ApiResponse.success(nguaService.getHorseById(id)));
+    public ResponseEntity<ApiResponse<NguaResponseDTO>> getHorseById(@PathVariable String id, Authentication authentication) {
+        String requesterMaTK = currentUserService.resolveMaTK(authentication);
+        boolean privileged = currentUserService.isPrivileged(authentication);
+        return ResponseEntity.ok(ApiResponse.success(nguaService.getHorseById(id, requesterMaTK, privileged)));
+    }
+
+    private boolean isPublicViewer(Authentication authentication) {
+        return !currentUserService.hasRole(authentication, "HORSE_OWNER") && !currentUserService.isPrivileged(authentication);
+    }
+
+    /**
+     * Ảnh đại diện ngựa - endpoint công khai (nằm dưới /horses/** đã permitAll), không cần đăng nhập,
+     * dùng trực tiếp trong &lt;img src&gt; ở trang khán giả (khác /upload/{id} yêu cầu Bearer token).
+     */
+    @GetMapping("/{id}/avatar")
+    public ResponseEntity<byte[]> getAvatar(@PathVariable String id) {
+        TepTin file = nguaService.getHorseAvatarFile(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ảnh đại diện ngựa", "maNgua", id));
+        byte[] content = uploadService.readFileBytes(file);
+        MediaType mediaType = file.getContentType() != null
+                ? MediaType.parseMediaType(file.getContentType()) : MediaType.APPLICATION_OCTET_STREAM;
+        return ResponseEntity.ok().contentType(mediaType).body(content);
     }
 
     @GetMapping("/{id}/race-history")
@@ -95,27 +117,5 @@ public class NguaController {
         boolean privileged = currentUserService.isPrivileged(authentication);
         nguaService.deleteHorse(id, staffId, privileged);
         return ResponseEntity.ok(ApiResponse.success(null, "Xóa ngựa thành công"));
-    }
-
-    @PatchMapping("/{id}/approve")
-    public ResponseEntity<ApiResponse<NguaResponseDTO>> approveHorse(@PathVariable String id, Authentication authentication) {
-        String staffId = currentUserService.resolveMaTK(authentication);
-        return ResponseEntity.ok(ApiResponse.success(nguaService.approveHorse(id, staffId), "Đã duyệt ngựa"));
-    }
-
-    @PatchMapping("/{id}/reject")
-    public ResponseEntity<ApiResponse<NguaResponseDTO>> rejectHorse(
-            @PathVariable String id, @RequestBody(required = false) Map<String, String> body, Authentication authentication) {
-        String staffId = currentUserService.resolveMaTK(authentication);
-        String reason = body != null ? body.get("reason") : null;
-        return ResponseEntity.ok(ApiResponse.success(nguaService.rejectHorse(id, reason, staffId), "Đã từ chối ngựa"));
-    }
-
-    @PatchMapping("/{id}/disqualify")
-    public ResponseEntity<ApiResponse<NguaResponseDTO>> disqualifyHorse(
-            @PathVariable String id, @RequestBody(required = false) Map<String, String> body, Authentication authentication) {
-        String staffId = currentUserService.resolveMaTK(authentication);
-        String reason = body != null ? body.get("reason") : null;
-        return ResponseEntity.ok(ApiResponse.success(nguaService.disqualifyHorse(id, reason, staffId), "Đã loại ngựa"));
     }
 }

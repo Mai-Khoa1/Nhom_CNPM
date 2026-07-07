@@ -1,7 +1,6 @@
 package com.horseracing.dto.ngua;
 
 import com.horseracing.dto.common.Gender;
-import com.horseracing.dto.common.HorseStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,8 +25,9 @@ public class NguaResponseDTO {
     private String avatarUrl;
     private String passportUrl;
     private String healthCertUrl;
-    private HorseStatus status;
     private String ownerId;
     private String ownerName;
+    /** Lỗi 6 (soft-delete): false = "Ngừng hoạt động" - hồ sơ đã từng có đăng ký nên không xóa cứng được. */
+    private boolean active;
     private LocalDateTime createdAt;
 }

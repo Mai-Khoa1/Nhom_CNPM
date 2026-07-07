@@ -13,6 +13,8 @@ const MainLayout = () => {
   const navLinks = [
     { path: '/', label: 'Trang chủ' },
     { path: '/races', label: 'Cuộc đua' },
+    { path: '/horses', label: 'Ngựa đua' },
+    { path: '/jockeys', label: 'Nài ngựa' },
     { path: '/leaderboard', label: 'Bảng xếp hạng' },
   ];
 
@@ -45,7 +47,10 @@ const MainLayout = () => {
             </Button>
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
-                <Link to={role === Role.ADMIN || role === Role.ORGANIZER ? '/admin/dashboard' : '/my-horses'}>
+                <Link to={
+                  role === Role.ADMIN || role === Role.ORGANIZER ? '/admin/dashboard'
+                    : role === Role.HORSE_OWNER ? '/my-horses' : '/'
+                }>
                   <Button variant="outline" size="sm">
                     <User className="h-4 w-4 mr-1" />
                     {user?.fullName}

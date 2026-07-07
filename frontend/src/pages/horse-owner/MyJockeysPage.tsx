@@ -3,25 +3,26 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { jockeyApi } from '@/api/jockeyApi';
 import { queryKeys } from '@/constants/queryKeys';
-import { JockeyStatus } from '@/types/enums';
 import { JockeyResponse } from '@/types/jockey';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DataTable, Column } from '@/components/common/DataTable';
 import { PaginationControl } from '@/components/common/PaginationControl';
-import { StatusBadge } from '@/components/common/StatusBadge';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { getJockeyStatusColor } from '@/utils/getStatusColor';
 import { formatDate } from '@/utils/formatDate';
 import { handleApiError } from '@/utils/apiHelpers';
 import { Plus, Eye, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+type ActiveFilter = 'ACTIVE' | 'INACTIVE' | 'ALL';
+
 const MyJockeysPage = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('ACTIVE');
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const params = { page, size: 10 };
+  const params = { page, size: 10, includeInactive: activeFilter !== 'ACTIVE' };
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.jockeys.list(params),
@@ -38,7 +39,8 @@ const MyJockeysPage = () => {
     onError: (error) => toast.error(handleApiError(error)),
   });
 
-  const jockeys = data?.data?.data?.content;
+  const allJockeys = data?.data?.data?.content ?? [];
+  const jockeys = activeFilter === 'INACTIVE' ? allJockeys.filter((j) => !j.active) : allJockeys;
   const pageInfo = data?.data?.data;
 
   const columns: Column<JockeyResponse>[] = [
@@ -49,7 +51,9 @@ const MyJockeysPage = () => {
     { key: 'weight', header: 'Cân nặng', render: (j) => j.weight ? `${j.weight} kg` : '-' },
     {
       key: 'status', header: 'Trạng thái',
-      render: (j) => <StatusBadge status={j.status} colorClass={getJockeyStatusColor(j.status)} />,
+      render: (j) => j.active
+        ? <span className="text-green-600 text-sm font-medium">Hoạt động</span>
+        : <span className="text-muted-foreground text-sm">Ngừng hoạt động</span>,
     },
     {
       key: 'actions', header: 'Thao tác',
@@ -58,16 +62,12 @@ const MyJockeysPage = () => {
           <Link to={`/my-jockeys/${j.id}`}>
             <Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button>
           </Link>
-          {(j.status === JockeyStatus.PENDING || j.status === JockeyStatus.REJECTED) && (
-            <Link to={`/my-jockeys/${j.id}/edit`}>
-              <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
-            </Link>
-          )}
-          {(j.status === JockeyStatus.PENDING || j.status === JockeyStatus.REJECTED) && (
-            <Button variant="ghost" size="icon" onClick={() => setDeleteId(j.id)}>
-              <Trash2 className="h-4 w-4 text-red-500" />
-            </Button>
-          )}
+          <Link to={`/my-jockeys/${j.id}/edit`}>
+            <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
+          </Link>
+          <Button variant="ghost" size="icon" onClick={() => setDeleteId(j.id)}>
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </Button>
         </div>
       ),
     },
@@ -84,7 +84,21 @@ const MyJockeysPage = () => {
         </Link>
       </div>
 
-      <DataTable columns={columns} data={jockeys ?? []} isLoading={isLoading} emptyMessage="Bạn chưa có nài nào" />
+      <div className="flex flex-col md:flex-row gap-4 mb-4">
+        <div className="flex-1" />
+        <Select value={activeFilter} onValueChange={(v) => { setActiveFilter(v as ActiveFilter); setPage(0); }}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Trạng thái" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ACTIVE">Đang hoạt động</SelectItem>
+            <SelectItem value="INACTIVE">Ngừng hoạt động</SelectItem>
+            <SelectItem value="ALL">Tất cả</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <DataTable columns={columns} data={jockeys} isLoading={isLoading} emptyMessage="Bạn chưa có nài nào" />
 
       {pageInfo && (
         <PaginationControl page={pageInfo.page} totalPages={pageInfo.totalPages} totalElements={pageInfo.totalElements} onPageChange={setPage} />
@@ -94,7 +108,7 @@ const MyJockeysPage = () => {
         open={deleteId !== null}
         onOpenChange={() => setDeleteId(null)}
         title="Xóa nài"
-        description="Bạn có chắc muốn xóa nài này?"
+        description="Bạn có chắc muốn xóa nài này? Nếu nài đã từng đăng ký thi đấu, hồ sơ sẽ chuyển sang Ngừng hoạt động (giữ lịch sử) thay vì xóa hẳn."
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
         variant="destructive"
         confirmText="Xóa"

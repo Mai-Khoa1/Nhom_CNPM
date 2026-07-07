@@ -17,9 +17,8 @@ import java.time.LocalDateTime;
 @Builder
 public class NaiNgua {
 
-    public static final String TRANG_THAI_SAN_SANG = "Sẵn sàng";
-    public static final String TRANG_THAI_CHAN_THUONG = "Chấn thương";
-    public static final String TRANG_THAI_NGHI_HUU = "Nghỉ hưu";
+    public static final String TRANG_THAI_HOAT_DONG = "Hoạt động";
+    public static final String TRANG_THAI_NGUNG_HOAT_DONG = "Ngừng hoạt động";
 
     @Id
     @Column(name = "maNaiNgua", length = 50)
@@ -47,9 +46,6 @@ public class NaiNgua {
     @Column(name = "soGiayPhep", unique = true, length = 50)
     private String soGiayPhep;
 
-    @Column(name = "trangThai", length = 50)
-    private String trangThai;
-
     @Column(name = "canNang")
     private Double canNang;
 
@@ -62,6 +58,10 @@ public class NaiNgua {
     @Column(name = "ghiChu", length = 500)
     private String ghiChu;
 
+    /** Xóa mềm (lỗi 6): "Ngừng hoạt động" khi hồ sơ đã từng có đăng ký thi đấu và bị người dùng "xóa". */
+    @Column(name = "trangThai", length = 30)
+    private String trangThai;
+
     @Column(name = "ngayTao", updatable = false)
     private LocalDateTime ngayTao;
 
@@ -73,7 +73,7 @@ public class NaiNgua {
         ngayTao = LocalDateTime.now();
         ngayCapNhat = LocalDateTime.now();
         if (trangThai == null) {
-            trangThai = TRANG_THAI_SAN_SANG;
+            trangThai = TRANG_THAI_HOAT_DONG;
         }
     }
 

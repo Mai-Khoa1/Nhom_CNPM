@@ -7,9 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Role } from '@/types/enums';
 import {
   LayoutDashboard, Trophy, Flag, Layers, ClipboardList,
-  Medal, Bell, FileText, Users, Shield, ScrollText, Settings,
+  Medal, Bell, FileText, Users, ScrollText, Settings,
   Sun, Moon, LogOut, Menu, ChevronLeft,
-  PawPrint, UserCheck, ClipboardCheck,
+  ClipboardCheck,
 } from 'lucide-react';
 import { cn } from '@/utils/cn';
 
@@ -20,28 +20,31 @@ const AdminLayout = () => {
   useNotificationBadge();
   const location = useLocation();
 
+  // Ban tổ chức không còn quản lý danh sách Ngựa/Nài trực tiếp (hồ sơ do chủ ngựa tự quản lý, không cần
+  // duyệt) - BTC chỉ xử lý qua từng LẦN ĐĂNG KÝ thi đấu gửi tới mình (mục "Đăng ký").
   const organizerLinks = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/admin/seasons', label: 'Mùa giải', icon: Trophy },
     { path: '/admin/races', label: 'Cuộc đua', icon: Flag },
     { path: '/admin/lanes', label: 'Làn đua', icon: Layers },
-    { path: '/admin/horses', label: 'Quản lý Ngựa', icon: PawPrint },
-    { path: '/admin/jockeys', label: 'Quản lý Nài ngựa', icon: UserCheck },
     { path: '/admin/update-requests', label: 'Duyệt cập nhật', icon: ClipboardCheck },
     { path: '/admin/registrations', label: 'Đăng ký', icon: ClipboardList },
     { path: '/admin/results', label: 'Kết quả', icon: Medal },
     { path: '/admin/notifications', label: 'Thông báo', icon: Bell },
-    { path: '/admin/files', label: 'Tệp tin', icon: FileText },
+    { path: '/admin/file-requests', label: 'Duyệt tệp tin', icon: FileText },
   ];
 
+  // Admin chỉ còn đúng 4 mục: Dashboard, Người dùng, Audit Log, Hệ thống.
+  // Toàn bộ nghiệp vụ đua (mùa giải/cuộc đua/ngựa/nài/đăng ký/kết quả/thông báo/tệp tin/phân quyền)
+  // do Ban tổ chức (ORGANIZER) đảm nhiệm.
   const adminLinks = [
+    { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/admin/users', label: 'Người dùng', icon: Users },
-    { path: '/admin/roles', label: 'Phân quyền', icon: Shield },
     { path: '/admin/audit-logs', label: 'Audit Log', icon: ScrollText },
     { path: '/admin/system', label: 'Hệ thống', icon: Settings },
   ];
 
-  const links = role === Role.ADMIN ? [...organizerLinks, ...adminLinks] : organizerLinks;
+  const links = role === Role.ADMIN ? adminLinks : organizerLinks;
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -54,7 +57,7 @@ const AdminLayout = () => {
           {!sidebarCollapsed && (
             <Link to="/admin/dashboard" className="flex items-center gap-2">
               <span className="text-xl">🏇</span>
-              <span className="font-bold text-[#D4A017]">Admin</span>
+              <span className="font-bold text-[#D4A017]">{role === Role.ADMIN ? 'Admin' : 'Ban tổ chức'}</span>
             </Link>
           )}
           <Button variant="ghost" size="icon" onClick={toggleSidebar} className="text-white hover:bg-white/10">
@@ -88,9 +91,7 @@ const AdminLayout = () => {
       <div className={cn('flex-1 flex flex-col transition-all duration-300', sidebarCollapsed ? 'ml-16' : 'ml-64')}>
         {/* Topbar */}
         <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm px-6">
-          <div className="text-sm text-muted-foreground">
-            {location.pathname.split('/').filter(Boolean).join(' > ')}
-          </div>
+          <Link to="/" className="text-sm text-muted-foreground hover:text-[#D4A017]">← Về trang chủ</Link>
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" onClick={toggleTheme}>
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}

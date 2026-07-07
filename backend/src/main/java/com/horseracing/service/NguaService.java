@@ -1,21 +1,22 @@
 package com.horseracing.service;
 
-import com.horseracing.dto.common.HorseStatus;
-import com.horseracing.dto.common.NotificationType;
 import com.horseracing.dto.common.PageResponse;
 import com.horseracing.dto.common.StatusMapper;
 import com.horseracing.dto.ngua.NguaRequestDTO;
 import com.horseracing.dto.ngua.NguaResponseDTO;
 import com.horseracing.entity.ChuNgua;
+import com.horseracing.entity.DangKyThiDau;
 import com.horseracing.entity.Ngua;
 import com.horseracing.entity.Result;
+import com.horseracing.entity.TepTin;
 import com.horseracing.exception.DuplicateResourceException;
-import com.horseracing.exception.ResourceInUseException;
 import com.horseracing.exception.ResourceNotFoundException;
 import com.horseracing.repository.ChuNguaRepository;
+import com.horseracing.repository.DangKyThiDauRepository;
 import com.horseracing.repository.NguaRepository;
 import com.horseracing.repository.ResultRepository;
 import com.horseracing.repository.ScheduleRepository;
+import com.horseracing.repository.TepTinRepository;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,11 +29,14 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * NguaService - quản lý ngựa đua (thêm, sửa, xóa, duyệt/từ chối/loại, tìm kiếm có phân trang).
+ * NguaService - quản lý hồ sơ ngựa đua của chủ ngựa (thêm, sửa, xóa, tìm kiếm có phân trang).
+ * Hồ sơ không còn trạng thái duyệt riêng - việc duyệt chỉ diễn ra ở cấp đăng ký thi đấu
+ * (xem RegistrationService/DangKyThiDau).
  */
 @Service
 @RequiredArgsConstructor
@@ -40,12 +44,18 @@ import java.util.stream.Collectors;
 @Transactional
 public class NguaService {
 
+    private static final String TARGET_TYPE_DANG_KY = "DANG_KY";
+    private static final String FILE_TYPE_HORSE_PHOTO = "HORSE_PHOTO";
+    private static final String FILE_TYPE_PASSPORT = "PASSPORT_SCAN";
+    private static final String FILE_TYPE_HEALTH_CERT = "HEALTH_CERTIFICATE";
+
     private final NguaRepository nguaRepository;
     private final ChuNguaRepository chuNguaRepository;
     private final ResultRepository resultRepository;
     private final ScheduleRepository scheduleRepository;
+    private final DangKyThiDauRepository dangKyThiDauRepository;
+    private final TepTinRepository tepTinRepository;
     private final NhatKyHoatDongService nhatKyHoatDongService;
-    private final NotificationService notificationService;
     private final UpdateRequestService updateRequestService;
 
     public NguaResponseDTO createHorse(NguaRequestDTO dto, String ownerMaTK, String staffId) {
@@ -53,14 +63,9 @@ public class NguaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Chủ ngựa của tài khoản", "maTK", ownerMaTK));
 
         String maNgua = (dto.getCode() != null && !dto.getCode().isBlank()) ? dto.getCode() : generateMaNgua();
-        nguaRepository.findById(maNgua).ifPresent(existing -> {
-            HorseStatus existingStatus = StatusMapper.toHorseStatus(existing.getTrangThai());
-            if (existingStatus != HorseStatus.REJECTED) {
-                // Chỉ chặn trùng mã với ngựa đang chờ duyệt/đã duyệt/bị loại; mã đã bị TỪ CHỐI được phép tạo lại.
-                throw new DuplicateResourceException("Mã ngựa '" + existing.getMaNgua() + "' đã tồn tại");
-            }
-            nguaRepository.delete(existing);
-        });
+        if (nguaRepository.existsById(maNgua)) {
+            throw new DuplicateResourceException("Mã ngựa '" + maNgua + "' đã tồn tại");
+        }
 
         Ngua ngua = Ngua.builder()
                 .maNgua(maNgua)
@@ -73,25 +78,20 @@ public class NguaService {
                         : null)
                 .mauLong(dto.getColor())
                 .troiLuong(dto.getWeight())
-                .trangThai(StatusMapper.toTrangThaiNgua(HorseStatus.PENDING))
                 .build();
 
         Ngua saved = nguaRepository.save(ngua);
         nhatKyHoatDongService.writeAuditLog(staffId, "CREATE_HORSE", "Horse:" + saved.getMaNgua(),
                 "Tạo ngựa mới: " + saved.getTenNgua());
 
-        notificationService.notifyAdmins(
-                "Ngựa mới chờ duyệt",
-                "Chủ ngựa " + chuNgua.getHoTen() + " đã đăng ký ngựa mới '" + saved.getTenNgua() + "' cần duyệt.",
-                NotificationType.SYSTEM, "HORSE", saved.getMaNgua());
-
         return mapToResponseDTO(saved, chuNgua);
     }
 
     /**
-     * Sửa thông tin ngựa:
-     * - PENDING / REJECTED: cập nhật trực tiếp (chưa duyệt, không cần qua UpdateRequest).
-     * - APPROVED: tạo YeuCauCapNhat chờ Ban tổ chức duyệt, dữ liệu gốc giữ nguyên cho đến khi duyệt.
+     * Sửa thông tin ngựa (mục 2.5):
+     * - Ngựa CHƯA có đăng ký nào ở trạng thái APPROVED -> chủ ngựa sửa tự do, áp dụng ngay.
+     * - Ngựa ĐANG có đăng ký APPROVED tại 1 hoặc nhiều Ban tổ chức -> gửi YeuCauCapNhat tới TỪNG BTC đó,
+     *   dữ liệu gốc giữ nguyên cho tới khi có BTC duyệt (BTC nào duyệt trước thì áp dụng - xem UpdateRequestService).
      */
     public NguaResponseDTO updateHorse(String maNgua, NguaRequestDTO dto, String staffId, boolean privileged) {
         Ngua ngua = nguaRepository.findById(maNgua)
@@ -101,11 +101,14 @@ public class NguaService {
 
         assertOwnership(chuNgua, staffId, privileged);
 
-        HorseStatus currentStatus = StatusMapper.toHorseStatus(ngua.getTrangThai());
-        if (HorseStatus.APPROVED.equals(currentStatus)) {
-            updateRequestService.createForHorse(ngua, dto, chuNgua);
+        List<String> activeOrganizerIds = dangKyThiDauRepository.findDistinctOrganizerIdsByApprovedHorse(maNgua);
+        if (!activeOrganizerIds.isEmpty()) {
+            for (String organizerId : activeOrganizerIds) {
+                updateRequestService.createForHorse(ngua, dto, chuNgua, organizerId);
+            }
             nhatKyHoatDongService.writeAuditLog(staffId, "REQUEST_UPDATE_HORSE", "Horse:" + maNgua,
-                    "Gửi yêu cầu cập nhật thông tin ngựa: " + ngua.getTenNgua());
+                    "Gửi yêu cầu cập nhật thông tin ngựa " + ngua.getTenNgua() + " tới " + activeOrganizerIds.size()
+                            + " Ban tổ chức đang có đăng ký đã duyệt");
         } else {
             ngua.setTenNgua(dto.getName());
             ngua.setGiongNgua(dto.getBreed());
@@ -124,6 +127,11 @@ public class NguaService {
         return mapToResponseDTO(ngua, chuNgua);
     }
 
+    /**
+     * Lỗi 6: hồ sơ chưa từng có đăng ký thi đấu nào -> xóa cứng như trước. Đã từng có đăng ký (bất kể
+     * trạng thái đăng ký đó là gì) -> xóa mềm (chuyển "Ngừng hoạt động") để giữ nguyên lịch sử thi đấu/
+     * kết quả/bảng xếp hạng và tránh lỗi khóa ngoại khi hiển thị thẳng ra người dùng.
+     */
     public void deleteHorse(String maNgua, String staffId, boolean privileged) {
         Ngua ngua = nguaRepository.findById(maNgua)
                 .orElseThrow(() -> new ResourceNotFoundException("Ngựa", "maNgua", maNgua));
@@ -131,64 +139,43 @@ public class NguaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Chủ ngựa", "maChuNgua", ngua.getMaChuNgua()));
         assertOwnership(chuNgua, staffId, privileged);
 
-        if (nguaRepository.countUpcomingRaces(maNgua) > 0) {
-            throw new ResourceInUseException(
-                    "Không thể xóa ngựa '" + ngua.getTenNgua() + "' vì đang có lịch thi đấu sắp diễn ra.");
+        if (dangKyThiDauRepository.findByMaNgua(maNgua).isEmpty()) {
+            nguaRepository.delete(ngua);
+            nhatKyHoatDongService.writeAuditLog(staffId, "DELETE_HORSE", "Horse:" + maNgua,
+                    "Đã xóa ngựa: " + ngua.getTenNgua());
+        } else {
+            ngua.setTrangThai(Ngua.TRANG_THAI_NGUNG_HOAT_DONG);
+            nguaRepository.save(ngua);
+            nhatKyHoatDongService.writeAuditLog(staffId, "DEACTIVATE_HORSE", "Horse:" + maNgua,
+                    "Đã chuyển ngựa '" + ngua.getTenNgua() + "' sang Ngừng hoạt động (đã từng có đăng ký thi đấu, không xóa cứng được)");
         }
-
-        nguaRepository.delete(ngua);
-        nhatKyHoatDongService.writeAuditLog(staffId, "DELETE_HORSE", "Horse:" + maNgua,
-                "Đã xóa ngựa: " + ngua.getTenNgua());
     }
 
-    public NguaResponseDTO approveHorse(String maNgua, String staffId) {
-        return changeStatus(maNgua, HorseStatus.APPROVED, "APPROVE_HORSE", null, staffId);
-    }
-
-    public NguaResponseDTO rejectHorse(String maNgua, String reason, String staffId) {
-        return changeStatus(maNgua, HorseStatus.REJECTED, "REJECT_HORSE", reason, staffId);
-    }
-
-    public NguaResponseDTO disqualifyHorse(String maNgua, String reason, String staffId) {
-        return changeStatus(maNgua, HorseStatus.DISQUALIFIED, "DISQUALIFY_HORSE", reason, staffId);
-    }
-
-    private NguaResponseDTO changeStatus(String maNgua, HorseStatus status, String action, String reason, String staffId) {
-        Ngua ngua = nguaRepository.findById(maNgua)
-                .orElseThrow(() -> new ResourceNotFoundException("Ngựa", "maNgua", maNgua));
-
-        ngua.setTrangThai(StatusMapper.toTrangThaiNgua(status));
-        Ngua updated = nguaRepository.save(ngua);
-
-        String desc = "Cập nhật trạng thái ngựa " + updated.getTenNgua() + " -> " + status
-                + (reason != null && !reason.isBlank() ? " (Lý do: " + reason + ")" : "");
-        nhatKyHoatDongService.writeAuditLog(staffId, action, "Horse:" + maNgua, desc);
-
-        ChuNgua chuNgua = chuNguaRepository.findById(updated.getMaChuNgua()).orElse(null);
-        if (chuNgua != null) {
-            notificationService.notify(chuNgua.getMaTK(),
-                    "Cập nhật trạng thái ngựa",
-                    "Ngựa " + updated.getTenNgua() + " đã chuyển trạng thái -> " + status
-                            + (reason != null && !reason.isBlank() ? " (Lý do: " + reason + ")" : ""),
-                    status == HorseStatus.APPROVED ? NotificationType.APPROVAL : NotificationType.REJECTION,
-                    "HORSE", maNgua);
-        }
-        return mapToResponseDTO(updated, chuNgua);
-    }
-
+    /**
+     * privileged = ADMIN/ORGANIZER. Quan trọng: publicView không được suy chỉ từ role "có phải
+     * HORSE_OWNER hay không" - phải kiểm tra requester có ĐÚNG LÀ chủ của con ngựa này không, nếu
+     * không thì 1 chủ ngựa A có thể xem lộ passportUrl/healthCertUrl của chủ ngựa B qua GET /horses/{id}.
+     */
     @Transactional(readOnly = true)
-    public NguaResponseDTO getHorseById(String maNgua) {
+    public NguaResponseDTO getHorseById(String maNgua, String requesterMaTK, boolean privileged) {
         Ngua ngua = nguaRepository.findById(maNgua)
                 .orElseThrow(() -> new ResourceNotFoundException("Ngựa", "maNgua", maNgua));
         ChuNgua chuNgua = chuNguaRepository.findById(ngua.getMaChuNgua()).orElse(null);
-        return mapToResponseDTO(ngua, chuNgua);
+        boolean isOwner = chuNgua != null && chuNgua.getMaTK().equals(requesterMaTK);
+        boolean publicView = !privileged && !isOwner;
+        // Mục 4.2: khán giả (không phải chủ sở hữu, không phải ADMIN/ORGANIZER) chỉ xem được ngựa đã
+        // có ít nhất 1 đăng ký APPROVED ở đâu đó.
+        if (publicView && !dangKyThiDauRepository.findDistinctApprovedHorseIds().contains(maNgua)) {
+            throw new ResourceNotFoundException("Ngựa", "maNgua", maNgua);
+        }
+        return mapToResponseDTO(ngua, chuNgua, publicView);
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<NguaResponseDTO> getAllHorses(Pageable pageable, String keyword, HorseStatus status, String ownerId) {
-        Specification<Ngua> spec = buildSpecification(keyword, status, ownerId);
+    public PageResponse<NguaResponseDTO> getAllHorses(Pageable pageable, String keyword, String ownerId, boolean publicOnly, boolean includeInactive) {
+        Specification<Ngua> spec = buildSpecification(keyword, ownerId, publicOnly, includeInactive);
         return PageResponse.of(nguaRepository.findAll(spec, pageable), ngua ->
-                mapToResponseDTO(ngua, chuNguaRepository.findById(ngua.getMaChuNgua()).orElse(null)));
+                mapToResponseDTO(ngua, chuNguaRepository.findById(ngua.getMaChuNgua()).orElse(null), publicOnly));
     }
 
     @Transactional(readOnly = true)
@@ -223,24 +210,42 @@ public class NguaService {
                 .build();
     }
 
-    private Specification<Ngua> buildSpecification(String keyword, HorseStatus status, String ownerId) {
+    private Specification<Ngua> buildSpecification(String keyword, String ownerId, boolean publicOnly, boolean includeInactive) {
+        List<String> approvedHorseIds = publicOnly ? dangKyThiDauRepository.findDistinctApprovedHorseIds() : null;
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (keyword != null && !keyword.isBlank()) {
                 predicates.add(cb.like(cb.lower(root.get("tenNgua")), "%" + keyword.toLowerCase() + "%"));
             }
-            if (status != null) {
-                predicates.add(cb.equal(root.get("trangThai"), StatusMapper.toTrangThaiNgua(status)));
-            }
             if (ownerId != null && !ownerId.isBlank()) {
                 String maChuNgua = chuNguaRepository.findByMaTK(ownerId).map(ChuNgua::getMaChuNgua).orElse(ownerId);
                 predicates.add(cb.equal(root.get("maChuNgua"), maChuNgua));
+            }
+            if (approvedHorseIds != null) {
+                // Mục 4.2: khán giả chỉ thấy ngựa đã có ít nhất 1 đăng ký thi đấu được duyệt (không lọc
+                // theo trạng thái Hoạt động/Ngừng hoạt động - hồ sơ ngừng hoạt động vẫn hiển thị công khai
+                // nếu đã từng được duyệt, giữ nguyên lịch sử thành tích cho khán giả tra cứu - lỗi 6).
+                predicates.add(approvedHorseIds.isEmpty() ? cb.disjunction() : root.get("maNgua").in(approvedHorseIds));
+            } else if (!includeInactive) {
+                // Danh sách "Ngựa của tôi" mặc định chỉ hiện hồ sơ đang Hoạt động - lỗi 6.
+                predicates.add(cb.or(cb.equal(root.get("trangThai"), Ngua.TRANG_THAI_HOAT_DONG), cb.isNull(root.get("trangThai"))));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
 
     private NguaResponseDTO mapToResponseDTO(Ngua ngua, ChuNgua chuNgua) {
+        return mapToResponseDTO(ngua, chuNgua, false);
+    }
+
+    /**
+     * publicView = true (khán giả/khách chưa đăng nhập): ẩn tài liệu nhạy cảm (hộ chiếu, hồ sơ sức khỏe) -
+     * chỉ giữ avatarUrl để hiển thị ảnh đại diện, khớp mục 6.2. avatarUrl luôn là endpoint công khai
+     * /horses/{id}/avatar (không cần đăng nhập); passportUrl/healthCertUrl trỏ tới /upload/{id} (cần đăng
+     * nhập) nên chỉ trả cho chủ ngựa/Ban tổ chức/Admin.
+     */
+    private NguaResponseDTO mapToResponseDTO(Ngua ngua, ChuNgua chuNgua, boolean publicView) {
+        boolean hasAvatar = getHorseAvatarFile(ngua.getMaNgua()).isPresent();
         return NguaResponseDTO.builder()
                 .id(ngua.getMaNgua())
                 .code(ngua.getMaNgua())
@@ -250,11 +255,36 @@ public class NguaService {
                 .gender(ngua.getGioiTinh() != null ? StatusMapper.toGender(ngua.getGioiTinh().name()) : null)
                 .color(ngua.getMauLong())
                 .weight(ngua.getTroiLuong())
-                .status(StatusMapper.toHorseStatus(ngua.getTrangThai()))
+                .avatarUrl(hasAvatar ? "/horses/" + ngua.getMaNgua() + "/avatar" : null)
+                .passportUrl(publicView ? null : resolveLatestFile(ngua.getMaNgua(), FILE_TYPE_PASSPORT, this::registrationIdsOf)
+                        .map(t -> "/upload/" + t.getMaTepTin()).orElse(null))
+                .healthCertUrl(publicView ? null : resolveLatestFile(ngua.getMaNgua(), FILE_TYPE_HEALTH_CERT, this::registrationIdsOf)
+                        .map(t -> "/upload/" + t.getMaTepTin()).orElse(null))
                 .ownerId(chuNgua != null ? chuNgua.getMaTK() : null)
                 .ownerName(chuNgua != null ? chuNgua.getHoTen() : null)
+                .active(!Ngua.TRANG_THAI_NGUNG_HOAT_DONG.equals(ngua.getTrangThai()))
                 .createdAt(ngua.getNgayTao())
                 .build();
+    }
+
+    /** File ảnh đại diện mới nhất của ngựa (trong số các lần đăng ký, mọi trạng thái) - dùng cho endpoint /horses/{id}/avatar. */
+    @Transactional(readOnly = true)
+    public Optional<TepTin> getHorseAvatarFile(String maNgua) {
+        return resolveLatestFile(maNgua, FILE_TYPE_HORSE_PHOTO, this::registrationIdsOf);
+    }
+
+    private List<String> registrationIdsOf(String maNgua) {
+        return dangKyThiDauRepository.findByMaNgua(maNgua).stream().map(DangKyThiDau::getMaDangKy).collect(Collectors.toList());
+    }
+
+    private Optional<TepTin> resolveLatestFile(String targetId, String loaiFile, java.util.function.Function<String, List<String>> registrationIdsResolver) {
+        List<String> registrationIds = registrationIdsResolver.apply(targetId);
+        if (registrationIds.isEmpty()) {
+            return Optional.empty();
+        }
+        return tepTinRepository.findByLoaiDoiTuongAndMaDoiTuongInOrderByNgayTaoDesc(TARGET_TYPE_DANG_KY, registrationIds).stream()
+                .filter(t -> loaiFile.equals(t.getLoaiFile()))
+                .findFirst();
     }
 
     /** Chặn chủ ngựa A sửa/xóa ngựa của chủ ngựa B (ADMIN/ORGANIZER được bỏ qua). */

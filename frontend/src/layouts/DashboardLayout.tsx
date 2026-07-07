@@ -20,6 +20,7 @@ const DashboardLayout = () => {
     { path: '/my-horses', label: 'Ngựa của tôi', icon: '🐴' },
     { path: '/my-jockeys', label: 'Nài của tôi', icon: '🏇' },
     { path: '/my-registrations', label: 'Đăng ký thi đấu', icon: '📋' },
+    { path: '/my-files', label: 'Tệp tin', icon: '📁' },
     { path: '/notifications', label: 'Thông báo', icon: '🔔' },
     { path: '/profile', label: 'Hồ sơ', icon: '👤' },
   ];

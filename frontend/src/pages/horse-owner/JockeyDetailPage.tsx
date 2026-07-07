@@ -2,16 +2,15 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { jockeyApi } from '@/api/jockeyApi';
+import { uploadApi } from '@/api/uploadApi';
 import { queryKeys } from '@/constants/queryKeys';
-import { JockeyStatus } from '@/types/enums';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { StatusBadge } from '@/components/common/StatusBadge';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { getJockeyStatusColor } from '@/utils/getStatusColor';
 import { formatDate } from '@/utils/formatDate';
 import { handleApiError } from '@/utils/apiHelpers';
-import { ArrowLeft, Edit, Trash2, Loader2 } from 'lucide-react';
+import { resolveApiUrl } from '@/utils/resolveApiUrl';
+import { ArrowLeft, Edit, Trash2, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 const JockeyDetailPage = () => {
@@ -38,6 +37,20 @@ const JockeyDetailPage = () => {
     onError: (error) => toast.error(handleApiError(error)),
   });
 
+  /** licenseScanUrl/medicalCertUrl trỏ tới /upload/{id} (cần Bearer token) nên không thể dùng thẳng
+   * <a href> - phải tải blob qua axiosInstance rồi mở bằng URL tạm, khác avatarUrl là endpoint công khai. */
+  const openProtectedFile = async (fileUrl: string, fileLabel: string) => {
+    const fileId = fileUrl.split('/').pop();
+    if (!fileId) return;
+    try {
+      const res = await uploadApi.getById(fileId);
+      const url = URL.createObjectURL(res.data as Blob);
+      window.open(url, '_blank');
+    } catch (error) {
+      toast.error(handleApiError(error) || `Không thể mở ${fileLabel}`);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -57,9 +70,6 @@ const JockeyDetailPage = () => {
     );
   }
 
-  const canEdit = jockey.status !== JockeyStatus.INACTIVE;
-  const canDelete = jockey.status === JockeyStatus.PENDING || jockey.status === JockeyStatus.REJECTED;
-
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -67,30 +77,25 @@ const JockeyDetailPage = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />Quay lại
         </Button>
         <div className="flex gap-2">
-          {canEdit && (
-            <Link to={`/my-jockeys/${jockey.id}/edit`}>
-              <Button className="bg-[#D4A017] hover:bg-[#C8940A] text-white">
-                <Edit className="h-4 w-4 mr-2" />
-                {(jockey.status === JockeyStatus.APPROVED || jockey.status === JockeyStatus.ACTIVE)
-                  ? 'Yêu cầu cập nhật'
-                  : 'Chỉnh sửa'}
-              </Button>
-            </Link>
-          )}
-          {canDelete && (
-            <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
-              <Trash2 className="h-4 w-4 mr-2" />Xóa
+          <Link to={`/my-jockeys/${jockey.id}/edit`}>
+            <Button className="bg-[#D4A017] hover:bg-[#C8940A] text-white">
+              <Edit className="h-4 w-4 mr-2" />Chỉnh sửa
             </Button>
-          )}
+          </Link>
+          <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+            <Trash2 className="h-4 w-4 mr-2" />Xóa
+          </Button>
         </div>
       </div>
 
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl">{jockey.fullName}</CardTitle>
-            <StatusBadge status={jockey.status} colorClass={getJockeyStatusColor(jockey.status)} />
+        {jockey.avatarUrl && (
+          <div className="aspect-video bg-muted overflow-hidden rounded-t-xl">
+            <img src={resolveApiUrl(jockey.avatarUrl)} alt={jockey.fullName} className="h-full w-full object-cover" />
           </div>
+        )}
+        <CardHeader>
+          <CardTitle className="text-xl">{jockey.fullName}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -123,6 +128,21 @@ const JockeyDetailPage = () => {
               </div>
             </div>
           </div>
+
+          {(jockey.licenseScanUrl || jockey.medicalCertUrl) && (
+            <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t">
+              {jockey.licenseScanUrl && (
+                <Button variant="outline" size="sm" onClick={() => openProtectedFile(jockey.licenseScanUrl!, 'giấy phép nài')}>
+                  <FileText className="h-4 w-4 mr-2" />Xem giấy phép nài
+                </Button>
+              )}
+              {jockey.medicalCertUrl && (
+                <Button variant="outline" size="sm" onClick={() => openProtectedFile(jockey.medicalCertUrl!, 'giấy khám sức khỏe')}>
+                  <FileText className="h-4 w-4 mr-2" />Xem giấy khám sức khỏe
+                </Button>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

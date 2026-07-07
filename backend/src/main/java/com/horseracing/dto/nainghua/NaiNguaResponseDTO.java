@@ -1,7 +1,6 @@
 package com.horseracing.dto.nainghua;
 
 import com.horseracing.dto.common.Gender;
-import com.horseracing.dto.common.JockeyStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,6 +26,7 @@ public class NaiNguaResponseDTO {
     private String avatarUrl;
     private String licenseScanUrl;
     private String medicalCertUrl;
-    private JockeyStatus status;
+    /** Lỗi 6 (soft-delete): false = "Ngừng hoạt động" - hồ sơ đã từng có đăng ký nên không xóa cứng được. */
+    private boolean active;
     private LocalDateTime createdAt;
 }

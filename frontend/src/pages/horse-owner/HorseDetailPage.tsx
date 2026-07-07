@@ -2,16 +2,15 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { horseApi } from '@/api/horseApi';
+import { uploadApi } from '@/api/uploadApi';
 import { queryKeys } from '@/constants/queryKeys';
-import { HorseStatus } from '@/types/enums';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { StatusBadge } from '@/components/common/StatusBadge';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { getHorseStatusColor } from '@/utils/getStatusColor';
 import { formatDate } from '@/utils/formatDate';
 import { handleApiError } from '@/utils/apiHelpers';
-import { ArrowLeft, Edit, Trash2, Loader2 } from 'lucide-react';
+import { resolveApiUrl } from '@/utils/resolveApiUrl';
+import { ArrowLeft, Edit, Trash2, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 const HorseDetailPage = () => {
@@ -38,6 +37,20 @@ const HorseDetailPage = () => {
     onError: (error) => toast.error(handleApiError(error)),
   });
 
+  /** passportUrl/healthCertUrl trỏ tới /upload/{id} (cần Bearer token) nên không thể dùng thẳng <a href> -
+   * phải tải blob qua axiosInstance rồi mở bằng URL tạm, khác avatarUrl là endpoint công khai. */
+  const openProtectedFile = async (fileUrl: string, fileLabel: string) => {
+    const fileId = fileUrl.split('/').pop();
+    if (!fileId) return;
+    try {
+      const res = await uploadApi.getById(fileId);
+      const url = URL.createObjectURL(res.data as Blob);
+      window.open(url, '_blank');
+    } catch (error) {
+      toast.error(handleApiError(error) || `Không thể mở ${fileLabel}`);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -57,9 +70,6 @@ const HorseDetailPage = () => {
     );
   }
 
-  const canEdit = horse.status !== HorseStatus.DISQUALIFIED;
-  const canDelete = horse.status === HorseStatus.PENDING || horse.status === HorseStatus.REJECTED;
-
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -67,28 +77,25 @@ const HorseDetailPage = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />Quay lại
         </Button>
         <div className="flex gap-2">
-          {canEdit && (
-            <Link to={`/my-horses/${horse.id}/edit`}>
-              <Button className="bg-[#D4A017] hover:bg-[#C8940A] text-white">
-                <Edit className="h-4 w-4 mr-2" />
-                {horse.status === HorseStatus.APPROVED ? 'Yêu cầu cập nhật' : 'Chỉnh sửa'}
-              </Button>
-            </Link>
-          )}
-          {canDelete && (
-            <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
-              <Trash2 className="h-4 w-4 mr-2" />Xóa
+          <Link to={`/my-horses/${horse.id}/edit`}>
+            <Button className="bg-[#D4A017] hover:bg-[#C8940A] text-white">
+              <Edit className="h-4 w-4 mr-2" />Chỉnh sửa
             </Button>
-          )}
+          </Link>
+          <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
+            <Trash2 className="h-4 w-4 mr-2" />Xóa
+          </Button>
         </div>
       </div>
 
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl">{horse.name}</CardTitle>
-            <StatusBadge status={horse.status} colorClass={getHorseStatusColor(horse.status)} />
+        {horse.avatarUrl && (
+          <div className="aspect-video bg-muted overflow-hidden rounded-t-xl">
+            <img src={resolveApiUrl(horse.avatarUrl)} alt={horse.name} className="h-full w-full object-cover" />
           </div>
+        )}
+        <CardHeader>
+          <CardTitle className="text-xl">{horse.name}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -129,6 +136,21 @@ const HorseDetailPage = () => {
               </div>
             </div>
           </div>
+
+          {(horse.passportUrl || horse.healthCertUrl) && (
+            <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t">
+              {horse.passportUrl && (
+                <Button variant="outline" size="sm" onClick={() => openProtectedFile(horse.passportUrl!, 'hộ chiếu ngựa')}>
+                  <FileText className="h-4 w-4 mr-2" />Xem hộ chiếu ngựa
+                </Button>
+              )}
+              {horse.healthCertUrl && (
+                <Button variant="outline" size="sm" onClick={() => openProtectedFile(horse.healthCertUrl!, 'giấy khám sức khỏe')}>
+                  <FileText className="h-4 w-4 mr-2" />Xem giấy khám sức khỏe
+                </Button>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

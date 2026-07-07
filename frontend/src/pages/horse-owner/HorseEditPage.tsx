@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { horseSchema, HorseFormData } from '@/schemas/horseSchema';
 import { horseApi } from '@/api/horseApi';
 import { queryKeys } from '@/constants/queryKeys';
-import { Gender, HorseStatus } from '@/types/enums';
+import { Gender } from '@/types/enums';
 import { handleApiError } from '@/utils/apiHelpers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,11 +44,7 @@ const HorseEditPage = () => {
   const mutation = useMutation({
     mutationFn: (formData: HorseFormData) => horseApi.update(id ?? '', formData),
     onSuccess: () => {
-      if (horse?.status === HorseStatus.APPROVED) {
-        toast.success('Yêu cầu cập nhật đã được gửi, đang chờ Ban tổ chức duyệt!');
-      } else {
-        toast.success('Cập nhật ngựa thành công!');
-      }
+      toast.success('Đã lưu thay đổi. Nếu ngựa đang thi đấu chính thức ở Ban tổ chức nào, thay đổi sẽ chờ Ban tổ chức đó duyệt trước khi áp dụng.');
       queryClient.invalidateQueries({ queryKey: queryKeys.horses.all });
       navigate('/my-horses');
     },

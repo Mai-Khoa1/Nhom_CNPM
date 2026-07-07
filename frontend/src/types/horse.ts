@@ -1,4 +1,4 @@
-import { Gender, HorseStatus } from './enums';
+import { Gender } from './enums';
 
 export interface HorseCreateRequest {
   name: string;
@@ -24,9 +24,10 @@ export interface HorseResponse {
   avatarUrl?: string;
   passportUrl?: string;
   healthCertUrl?: string;
-  status: HorseStatus;
   ownerId: string;
   ownerName: string;
+  /** false = "Ngừng hoạt động" (xóa mềm - hồ sơ đã từng có đăng ký thi đấu nên không xóa cứng được). */
+  active: boolean;
   createdAt: string;
 }
 
@@ -35,6 +36,6 @@ export interface HorseListParams {
   size?: number;
   sort?: string;
   keyword?: string;
-  status?: HorseStatus;
   ownerId?: string;
+  includeInactive?: boolean;
 }

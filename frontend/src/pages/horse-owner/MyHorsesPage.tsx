@@ -3,40 +3,39 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { horseApi } from '@/api/horseApi';
 import { queryKeys } from '@/constants/queryKeys';
-import { HorseStatus } from '@/types/enums';
 import { HorseResponse } from '@/types/horse';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SearchBar } from '@/components/common/SearchBar';
 import { PaginationControl } from '@/components/common/PaginationControl';
 import { DataTable, Column } from '@/components/common/DataTable';
-import { StatusBadge } from '@/components/common/StatusBadge';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { getHorseStatusColor } from '@/utils/getStatusColor';
 import { formatDate } from '@/utils/formatDate';
 import { handleApiError } from '@/utils/apiHelpers';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Plus, Eye, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+type ActiveFilter = 'ACTIVE' | 'INACTIVE' | 'ALL';
+
 const MyHorsesPage = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [keyword, setKeyword] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>('ACTIVE');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const debouncedKeyword = useDebounce(keyword);
 
-  const params: Record<string, unknown> = {
+  const params = {
     page,
     size: 10,
     keyword: debouncedKeyword || undefined,
-    status: statusFilter !== 'ALL' ? statusFilter : undefined,
+    includeInactive: activeFilter !== 'ACTIVE',
   };
 
   const { data, isLoading } = useQuery({
     queryKey: queryKeys.horses.list(params),
-    queryFn: () => horseApi.getAll(params as never),
+    queryFn: () => horseApi.getAll(params),
   });
 
   const deleteMutation = useMutation({
@@ -49,7 +48,8 @@ const MyHorsesPage = () => {
     onError: (error) => toast.error(handleApiError(error)),
   });
 
-  const horses = data?.data?.data?.content;
+  const allHorses = data?.data?.data?.content ?? [];
+  const horses = activeFilter === 'INACTIVE' ? allHorses.filter((h) => !h.active) : allHorses;
   const pageInfo = data?.data?.data;
 
   const columns: Column<HorseResponse>[] = [
@@ -60,7 +60,9 @@ const MyHorsesPage = () => {
     { key: 'dateOfBirth', header: 'Ngày sinh', render: (h) => formatDate(h.dateOfBirth) },
     {
       key: 'status', header: 'Trạng thái',
-      render: (h) => <StatusBadge status={h.status} colorClass={getHorseStatusColor(h.status)} />,
+      render: (h) => h.active
+        ? <span className="text-green-600 text-sm font-medium">Hoạt động</span>
+        : <span className="text-muted-foreground text-sm">Ngừng hoạt động</span>,
     },
     {
       key: 'actions', header: 'Thao tác',
@@ -69,16 +71,12 @@ const MyHorsesPage = () => {
           <Link to={`/my-horses/${h.id}`}>
             <Button variant="ghost" size="icon"><Eye className="h-4 w-4" /></Button>
           </Link>
-          {(h.status === HorseStatus.PENDING || h.status === HorseStatus.REJECTED) && (
-            <Link to={`/my-horses/${h.id}/edit`}>
-              <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
-            </Link>
-          )}
-          {(h.status === HorseStatus.PENDING || h.status === HorseStatus.REJECTED) && (
-            <Button variant="ghost" size="icon" onClick={() => setDeleteId(h.id)}>
-              <Trash2 className="h-4 w-4 text-red-500" />
-            </Button>
-          )}
+          <Link to={`/my-horses/${h.id}/edit`}>
+            <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
+          </Link>
+          <Button variant="ghost" size="icon" onClick={() => setDeleteId(h.id)}>
+            <Trash2 className="h-4 w-4 text-red-500" />
+          </Button>
         </div>
       ),
     },
@@ -99,20 +97,19 @@ const MyHorsesPage = () => {
         <div className="flex-1">
           <SearchBar value={keyword} onChange={setKeyword} placeholder="Tìm theo tên hoặc mã ngựa..." />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[160px]">
+        <Select value={activeFilter} onValueChange={(v) => { setActiveFilter(v as ActiveFilter); setPage(0); }}>
+          <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Trạng thái" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="ACTIVE">Đang hoạt động</SelectItem>
+            <SelectItem value="INACTIVE">Ngừng hoạt động</SelectItem>
             <SelectItem value="ALL">Tất cả</SelectItem>
-            {Object.values(HorseStatus).map((s) => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
-            ))}
           </SelectContent>
         </Select>
       </div>
 
-      <DataTable columns={columns} data={horses ?? []} isLoading={isLoading} emptyMessage="Bạn chưa có ngựa nào" />
+      <DataTable columns={columns} data={horses} isLoading={isLoading} emptyMessage="Bạn chưa có ngựa nào" />
 
       {pageInfo && (
         <PaginationControl
@@ -127,7 +124,7 @@ const MyHorsesPage = () => {
         open={deleteId !== null}
         onOpenChange={() => setDeleteId(null)}
         title="Xóa ngựa"
-        description="Bạn có chắc muốn xóa ngựa này? Hành động không thể hoàn tác."
+        description="Bạn có chắc muốn xóa ngựa này? Nếu ngựa đã từng đăng ký thi đấu, hồ sơ sẽ chuyển sang Ngừng hoạt động (giữ lịch sử) thay vì xóa hẳn."
         onConfirm={() => deleteId && deleteMutation.mutate(deleteId)}
         variant="destructive"
         confirmText="Xóa"

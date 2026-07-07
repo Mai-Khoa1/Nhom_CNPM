@@ -19,15 +19,6 @@ export const horseApi = {
   delete: (id: string) =>
     axiosInstance.delete<ApiResponse<void>>(`/horses/${id}`),
 
-  approve: (id: string) =>
-    axiosInstance.patch<ApiResponse<HorseResponse>>(`/horses/${id}/approve`),
-
-  reject: (id: string, reason: string) =>
-    axiosInstance.patch<ApiResponse<HorseResponse>>(`/horses/${id}/reject`, { reason }),
-
-  disqualify: (id: string, reason: string) =>
-    axiosInstance.patch<ApiResponse<HorseResponse>>(`/horses/${id}/disqualify`, { reason }),
-
   getRaceHistory: (id: string) =>
     axiosInstance.get<ApiResponse<RegistrationResponse[]>>(`/horses/${id}/race-history`),
 

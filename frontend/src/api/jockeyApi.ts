@@ -1,9 +1,9 @@
 import { axiosInstance } from './axiosInstance';
 import { ApiResponse, PageResponse } from '@/types/common';
-import { JockeyCreateRequest, JockeyUpdateRequest, JockeyResponse } from '@/types/jockey';
+import { JockeyCreateRequest, JockeyUpdateRequest, JockeyResponse, JockeyListParams } from '@/types/jockey';
 
 export const jockeyApi = {
-  getAll: (params?: Record<string, unknown>) =>
+  getAll: (params?: JockeyListParams) =>
     axiosInstance.get<ApiResponse<PageResponse<JockeyResponse>>>('/jockeys', { params }),
 
   getById: (id: string) =>
@@ -17,10 +17,4 @@ export const jockeyApi = {
 
   delete: (id: string) =>
     axiosInstance.delete<ApiResponse<void>>(`/jockeys/${id}`),
-
-  approve: (id: string) =>
-    axiosInstance.patch<ApiResponse<JockeyResponse>>(`/jockeys/${id}/approve`),
-
-  reject: (id: string, reason: string) =>
-    axiosInstance.patch<ApiResponse<JockeyResponse>>(`/jockeys/${id}/reject`, { reason }),
 };

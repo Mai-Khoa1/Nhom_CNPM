@@ -5,6 +5,7 @@ import com.horseracing.entity.ChuNgua;
 import com.horseracing.entity.Ngua;
 import com.horseracing.exception.DuplicateResourceException;
 import com.horseracing.repository.ChuNguaRepository;
+import com.horseracing.repository.DangKyThiDauRepository;
 import com.horseracing.repository.NguaRepository;
 import com.horseracing.repository.ResultRepository;
 import com.horseracing.repository.ScheduleRepository;
@@ -35,8 +36,8 @@ class NguaServiceTest {
     @Mock private ChuNguaRepository chuNguaRepository;
     @Mock private ResultRepository resultRepository;
     @Mock private ScheduleRepository scheduleRepository;
+    @Mock private DangKyThiDauRepository dangKyThiDauRepository;
     @Mock private NhatKyHoatDongService nhatKyHoatDongService;
-    @Mock private NotificationService notificationService;
     @Mock private UpdateRequestService updateRequestService;
 
     @InjectMocks private NguaService nguaService;
@@ -51,7 +52,6 @@ class NguaServiceTest {
         ownerB = ChuNgua.builder().maChuNgua("CNB").maTK("TK_B").hoTen("Chủ B").build();
         horseOfOwnerA = Ngua.builder()
                 .maNgua("N001").maChuNgua("CNA").tenNgua("Ngựa A")
-                .trangThai(Ngua.TRANG_THAI_CHO_DUYET)
                 .build();
     }
 
@@ -105,36 +105,13 @@ class NguaServiceTest {
     }
 
     @Test
-    void createHorse_blocksDuplicateCodeWhenExistingIsPendingOrApproved() {
+    void createHorse_blocksDuplicateCode() {
         when(chuNguaRepository.findByMaTK("TK_A")).thenReturn(Optional.of(ownerA));
-        Ngua pending = Ngua.builder().maNgua("N999").maChuNgua("CNA").trangThai(Ngua.TRANG_THAI_CHO_DUYET).build();
-        when(nguaRepository.findById("N999")).thenReturn(Optional.of(pending));
+        when(nguaRepository.existsById("N999")).thenReturn(true);
 
         NguaRequestDTO dto = NguaRequestDTO.builder().code("N999").name("Ngựa mới").build();
 
         assertThatThrownBy(() -> nguaService.createHorse(dto, "TK_A", "TK_A"))
                 .isInstanceOf(DuplicateResourceException.class);
-    }
-
-    @Test
-    void createHorse_allowsReusingCodeOfPreviouslyRejectedHorse() {
-        when(chuNguaRepository.findByMaTK("TK_A")).thenReturn(Optional.of(ownerA));
-        Ngua rejected = Ngua.builder().maNgua("N999").maChuNgua("CNA").trangThai(StatusRejectedHelper.rejected()).build();
-        when(nguaRepository.findById("N999")).thenReturn(Optional.of(rejected));
-        when(nguaRepository.save(any(Ngua.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        NguaRequestDTO dto = NguaRequestDTO.builder().code("N999").name("Ngựa mới").build();
-
-        nguaService.createHorse(dto, "TK_A", "TK_A");
-
-        verify((org.springframework.data.repository.CrudRepository<Ngua, String>) nguaRepository).delete(rejected);
-        verify(nguaRepository).save(any(Ngua.class));
-    }
-
-    /** Nhỏ gọn: tránh phụ thuộc trực tiếp vào StatusMapper trong test cho dễ đọc. */
-    static final class StatusRejectedHelper {
-        static String rejected() {
-            return com.horseracing.dto.common.StatusMapper.toTrangThaiNgua(com.horseracing.dto.common.HorseStatus.REJECTED);
-        }
     }
 }

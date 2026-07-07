@@ -14,8 +14,6 @@ public class DashboardStatsResponseDTO {
     private long totalJockeys;
     private long totalRaces;
     private long totalSeasons;
-    private long pendingHorses;
-    private long pendingJockeys;
     private long pendingRegistrations;
     private long upcomingRaces;
 }
