@@ -82,10 +82,10 @@ const RegistrationDetailPage = () => {
                 <p className="text-sm text-muted-foreground">Ngày đăng ký</p>
                 <p className="font-medium">{formatDate(registration.registeredAt)}</p>
               </div>
-              {registration.rejectReason && (
+              {registration.reason && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Lý do từ chối</p>
-                  <p className="font-medium text-red-600">{registration.rejectReason}</p>
+                  <p className="text-sm text-muted-foreground">Lý do</p>
+                  <p className="font-medium text-red-600">{registration.reason}</p>
                 </div>
               )}
             </div>

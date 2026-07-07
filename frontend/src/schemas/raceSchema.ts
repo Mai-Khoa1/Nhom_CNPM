@@ -7,7 +7,11 @@ export const raceSchema = z.object({
   location: z.string().min(1, 'Địa điểm bắt buộc'),
   distance: z.number().min(100, 'Tối thiểu 100 mét').max(10000, 'Tối đa 10000 mét'),
   maxHorses: z.number().min(2, 'Tối thiểu 2 ngựa').max(30, 'Tối đa 30 ngựa'),
+  minHorses: z.number().min(2, 'Tối thiểu 2 ngựa').max(30, 'Tối đa 30 ngựa').optional(),
   description: z.string().optional(),
+}).refine((data) => !data.minHorses || data.minHorses <= data.maxHorses, {
+  message: 'Số ngựa tối thiểu không được lớn hơn số ngựa tối đa',
+  path: ['minHorses'],
 });
 
 export type RaceFormData = z.infer<typeof raceSchema>;

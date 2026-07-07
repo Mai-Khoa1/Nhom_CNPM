@@ -20,6 +20,8 @@ public class DangKyThiDau {
     public static final String TRANG_THAI_CHO_DUYET = "Chờ duyệt";
     public static final String TRANG_THAI_DA_DUYET = "Đã duyệt";
     public static final String TRANG_THAI_TU_CHOI = "Từ chối";
+    public static final String TRANG_THAI_DA_HUY = "Đã hủy";
+    public static final String TRANG_THAI_BI_LOAI = "Bị loại";
 
     @Id
     @Column(name = "maDangKy", length = 50)
@@ -49,8 +51,9 @@ public class DangKyThiDau {
     @Column(name = "trangThai", length = 50)
     private String trangThai;
 
-    @Column(name = "lyDoTuChoi", length = 255)
-    private String lyDoTuChoi;
+    /** Lý do từ chối/hủy/loại - dùng chung cho REJECTED/CANCELLED/DISQUALIFIED (mỗi bản ghi chỉ ở 1 trạng thái). */
+    @Column(name = "lyDo", length = 255)
+    private String lyDo;
 
     @Column(name = "ghiChu", length = 255)
     private String ghiChu;

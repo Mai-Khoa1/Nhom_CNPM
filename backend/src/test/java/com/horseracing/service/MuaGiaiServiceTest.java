@@ -6,6 +6,7 @@ import com.horseracing.dto.season.SeasonRequestDTO;
 import com.horseracing.entity.LuatDiem;
 import com.horseracing.entity.MuaGiai;
 import com.horseracing.exception.ResourceInUseException;
+import com.horseracing.repository.BanToChucRepository;
 import com.horseracing.repository.LuatDiemRepository;
 import com.horseracing.repository.MuaGiaiRepository;
 import com.horseracing.repository.ScheduleRepository;
@@ -32,6 +33,7 @@ class MuaGiaiServiceTest {
     @Mock private MuaGiaiRepository muaGiaiRepository;
     @Mock private LuatDiemRepository luatDiemRepository;
     @Mock private ScheduleRepository scheduleRepository;
+    @Mock private BanToChucRepository banToChucRepository;
     @Mock private NhatKyHoatDongService nhatKyHoatDongService;
 
     @InjectMocks private MuaGiaiService muaGiaiService;
@@ -43,7 +45,7 @@ class MuaGiaiServiceTest {
         when(scheduleRepository.countByMaMuaGiaiAndTrangThai("MG1", StatusMapper.toTrangThaiChangDua(RaceStatus.OPEN)))
                 .thenReturn(2L);
 
-        assertThatThrownBy(() -> muaGiaiService.closeSeason("MG1", "TK_ORG"))
+        assertThatThrownBy(() -> muaGiaiService.closeSeason("MG1", "TK_ORG", null))
                 .isInstanceOf(ResourceInUseException.class);
 
         verify(muaGiaiRepository, never()).save(any());
@@ -56,7 +58,7 @@ class MuaGiaiServiceTest {
         when(scheduleRepository.countByMaMuaGiaiAndTrangThai("MG1", StatusMapper.toTrangThaiChangDua(RaceStatus.OPEN)))
                 .thenReturn(0L);
 
-        muaGiaiService.closeSeason("MG1", "TK_ORG");
+        muaGiaiService.closeSeason("MG1", "TK_ORG", null);
 
         verify(muaGiaiRepository).save(season);
     }
@@ -70,7 +72,7 @@ class MuaGiaiServiceTest {
         SeasonRequestDTO dto = new SeasonRequestDTO();
         dto.setName("Mùa mới");
 
-        muaGiaiService.createSeason(dto, "TK_ORG");
+        muaGiaiService.createSeason(dto, "TK_ORG", "BTC1");
 
         assertThat(captor.getAllValues()).hasSize(6);
         assertThat(captor.getAllValues().get(0).getHang()).isEqualTo(1);

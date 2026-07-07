@@ -26,6 +26,7 @@ public class RegistrationResponseDTO {
     private String ownerName;
     private Integer laneNumber;
     private RegistrationStatus status;
-    private String rejectReason;
+    /** Lý do từ chối/hủy/loại - tùy theo status hiện tại. */
+    private String reason;
     private LocalDateTime registeredAt;
 }

@@ -20,6 +20,7 @@ export interface RegistrationResponse {
   ownerName: string;
   laneNumber?: number;
   status: RegistrationStatus;
-  rejectReason?: string;
+  /** Lý do từ chối/hủy/loại - tùy theo status hiện tại. */
+  reason?: string;
   registeredAt: string;
 }

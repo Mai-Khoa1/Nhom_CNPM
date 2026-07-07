@@ -34,8 +34,10 @@ public class RegistrationController {
     public ResponseEntity<ApiResponse<PageResponse<RegistrationResponseDTO>>> getAllRegistrations(
             Pageable pageable,
             @RequestParam(required = false) String raceId,
-            @RequestParam(required = false) RegistrationStatus status) {
-        return ResponseEntity.ok(ApiResponse.success(registrationService.getAllRegistrations(pageable, raceId, status)));
+            @RequestParam(required = false) RegistrationStatus status,
+            Authentication authentication) {
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
+        return ResponseEntity.ok(ApiResponse.success(registrationService.getAllRegistrations(pageable, raceId, status, organizerScopeId)));
     }
 
     @GetMapping("/my")
@@ -46,8 +48,9 @@ public class RegistrationController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<RegistrationResponseDTO>> getRegistrationById(@PathVariable String id) {
-        return ResponseEntity.ok(ApiResponse.success(registrationService.getRegistrationById(id)));
+    public ResponseEntity<ApiResponse<RegistrationResponseDTO>> getRegistrationById(@PathVariable String id, Authentication authentication) {
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
+        return ResponseEntity.ok(ApiResponse.success(registrationService.getRegistrationById(id, organizerScopeId)));
     }
 
     @PostMapping
@@ -61,7 +64,8 @@ public class RegistrationController {
     @PatchMapping("/{id}/approve")
     public ResponseEntity<ApiResponse<Void>> approveRegistration(@PathVariable String id, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
-        registrationService.approveRegistration(id, staffId);
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
+        registrationService.approveRegistration(id, staffId, organizerScopeId);
         return ResponseEntity.ok(ApiResponse.success(null, "Đã duyệt đăng ký"));
     }
 
@@ -69,8 +73,29 @@ public class RegistrationController {
     public ResponseEntity<ApiResponse<Void>> rejectRegistration(
             @PathVariable String id, @RequestBody(required = false) Map<String, String> body, Authentication authentication) {
         String staffId = currentUserService.resolveMaTK(authentication);
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
         String reason = body != null ? body.get("reason") : null;
-        registrationService.rejectRegistration(id, reason, staffId);
+        registrationService.rejectRegistration(id, reason, staffId, organizerScopeId);
         return ResponseEntity.ok(ApiResponse.success(null, "Đã từ chối đăng ký"));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> cancelRegistration(
+            @PathVariable String id, @RequestBody(required = false) Map<String, String> body, Authentication authentication) {
+        String maTK = currentUserService.resolveMaTK(authentication);
+        String reason = body != null ? body.get("reason") : null;
+        registrationService.cancelRegistration(id, reason, maTK, maTK);
+        return ResponseEntity.ok(ApiResponse.success(null, "Đã hủy đăng ký"));
+    }
+
+    @PatchMapping("/{id}/disqualify")
+    public ResponseEntity<ApiResponse<RegistrationResponseDTO>> disqualifyRegistration(
+            @PathVariable String id, @RequestBody(required = false) Map<String, String> body, Authentication authentication) {
+        String staffId = currentUserService.resolveMaTK(authentication);
+        String organizerScopeId = currentUserService.resolveOrganizerId(authentication);
+        String reason = body != null ? body.get("reason") : null;
+        boolean confirmRevokePublish = body != null && "true".equalsIgnoreCase(body.get("confirmRevokePublish"));
+        return ResponseEntity.ok(ApiResponse.success(
+                registrationService.disqualifyRegistration(id, reason, confirmRevokePublish, staffId, organizerScopeId), "Đã loại đăng ký"));
     }
 }

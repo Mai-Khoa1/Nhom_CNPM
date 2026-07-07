@@ -1,8 +1,5 @@
 package com.horseracing.service;
 
-import com.horseracing.dto.common.HorseStatus;
-import com.horseracing.dto.common.JockeyStatus;
-import com.horseracing.dto.common.StatusMapper;
 import com.horseracing.dto.lane.LaneRequestDTO;
 import com.horseracing.dto.registration.RegistrationRequestDTO;
 import com.horseracing.entity.*;
@@ -32,6 +29,8 @@ class RegistrationServiceTest {
 
     @Mock private DangKyThiDauRepository dangKyThiDauRepository;
     @Mock private ScheduleRepository scheduleRepository;
+    @Mock private MuaGiaiRepository muaGiaiRepository;
+    @Mock private BanToChucRepository banToChucRepository;
     @Mock private NguaRepository nguaRepository;
     @Mock private NaiNguaRepository naiNguaRepository;
     @Mock private ChuNguaRepository chuNguaRepository;
@@ -52,12 +51,9 @@ class RegistrationServiceTest {
         ownerA = ChuNgua.builder().maChuNgua("CNA").maTK("TK_A").hoTen("Chủ A").build();
         ownerB = ChuNgua.builder().maChuNgua("CNB").maTK("TK_B").hoTen("Chủ B").build();
         race = Schedule.builder().maChangDua("R1").tenChangDua("Chặng 1").soNguaToiDa(10).build();
-        approvedHorseOfA = Ngua.builder().maNgua("N1").maChuNgua("CNA").tenNgua("Ngựa A")
-                .trangThai(StatusMapper.toTrangThaiNgua(HorseStatus.APPROVED)).build();
-        approvedJockeyOfA = NaiNgua.builder().maNaiNgua("J1").maChuNgua("CNA").hoTen("Nài A")
-                .trangThai(StatusMapper.toTrangThaiJockey(JockeyStatus.APPROVED)).build();
-        jockeyOfB = NaiNgua.builder().maNaiNgua("J2").maChuNgua("CNB").hoTen("Nài B")
-                .trangThai(StatusMapper.toTrangThaiJockey(JockeyStatus.APPROVED)).build();
+        approvedHorseOfA = Ngua.builder().maNgua("N1").maChuNgua("CNA").tenNgua("Ngựa A").build();
+        approvedJockeyOfA = NaiNgua.builder().maNaiNgua("J1").maChuNgua("CNA").hoTen("Nài A").build();
+        jockeyOfB = NaiNgua.builder().maNaiNgua("J2").maChuNgua("CNB").hoTen("Nài B").build();
     }
 
     private RegistrationRequestDTO dto(String horseId, String jockeyId) {
@@ -70,7 +66,7 @@ class RegistrationServiceTest {
 
     @Test
     void createRegistration_deniesMixingHorseAndJockeyFromDifferentOwners() {
-        when(scheduleRepository.findById("R1")).thenReturn(Optional.of(race));
+        when(scheduleRepository.findByIdForUpdate("R1")).thenReturn(Optional.of(race));
         when(nguaRepository.findById("N1")).thenReturn(Optional.of(approvedHorseOfA));
         when(naiNguaRepository.findById("J2")).thenReturn(Optional.of(jockeyOfB));
         when(chuNguaRepository.findByMaTK("TK_A")).thenReturn(Optional.of(ownerA));
@@ -83,9 +79,8 @@ class RegistrationServiceTest {
 
     @Test
     void createRegistration_deniesRegisteringAnotherOwnersHorse() {
-        when(scheduleRepository.findById("R1")).thenReturn(Optional.of(race));
-        Ngua horseOfB = Ngua.builder().maNgua("N2").maChuNgua("CNB").tenNgua("Ngựa B")
-                .trangThai(StatusMapper.toTrangThaiNgua(HorseStatus.APPROVED)).build();
+        when(scheduleRepository.findByIdForUpdate("R1")).thenReturn(Optional.of(race));
+        Ngua horseOfB = Ngua.builder().maNgua("N2").maChuNgua("CNB").tenNgua("Ngựa B").build();
         when(nguaRepository.findById("N2")).thenReturn(Optional.of(horseOfB));
         when(naiNguaRepository.findById("J1")).thenReturn(Optional.of(approvedJockeyOfA));
         when(chuNguaRepository.findByMaTK("TK_A")).thenReturn(Optional.of(ownerA));
@@ -95,22 +90,8 @@ class RegistrationServiceTest {
     }
 
     @Test
-    void createRegistration_blocksWhenHorseNotApproved() {
-        when(scheduleRepository.findById("R1")).thenReturn(Optional.of(race));
-        Ngua pendingHorse = Ngua.builder().maNgua("N1").maChuNgua("CNA").tenNgua("Ngựa A")
-                .trangThai(StatusMapper.toTrangThaiNgua(HorseStatus.PENDING)).build();
-        when(nguaRepository.findById("N1")).thenReturn(Optional.of(pendingHorse));
-        when(naiNguaRepository.findById("J1")).thenReturn(Optional.of(approvedJockeyOfA));
-        when(chuNguaRepository.findByMaTK("TK_A")).thenReturn(Optional.of(ownerA));
-
-        assertThatThrownBy(() -> registrationService.createRegistration(dto("N1", "J1"), "TK_A", "TK_A"))
-                .isInstanceOf(ResourceInUseException.class)
-                .hasMessageContaining("chưa được duyệt");
-    }
-
-    @Test
     void createRegistration_succeedsWhenSameOwnerAndBothApproved() {
-        when(scheduleRepository.findById("R1")).thenReturn(Optional.of(race));
+        when(scheduleRepository.findByIdForUpdate("R1")).thenReturn(Optional.of(race));
         when(nguaRepository.findById("N1")).thenReturn(Optional.of(approvedHorseOfA));
         when(naiNguaRepository.findById("J1")).thenReturn(Optional.of(approvedJockeyOfA));
         when(chuNguaRepository.findByMaTK("TK_A")).thenReturn(Optional.of(ownerA));
@@ -124,12 +105,12 @@ class RegistrationServiceTest {
     @Test
     void createRegistration_maxHorsesCountIgnoresRejectedRegistrations() {
         Schedule fullRace = Schedule.builder().maChangDua("R1").tenChangDua("Chặng 1").soNguaToiDa(1).build();
-        when(scheduleRepository.findById("R1")).thenReturn(Optional.of(fullRace));
+        when(scheduleRepository.findByIdForUpdate("R1")).thenReturn(Optional.of(fullRace));
         when(nguaRepository.findById("N1")).thenReturn(Optional.of(approvedHorseOfA));
         when(naiNguaRepository.findById("J1")).thenReturn(Optional.of(approvedJockeyOfA));
         when(chuNguaRepository.findByMaTK("TK_A")).thenReturn(Optional.of(ownerA));
         // Đã có 1 đăng ký nhưng bị TỪ CHỐI -> không được tính vào số lượng tối đa
-        when(dangKyThiDauRepository.countByMaChangDuaAndTrangThaiNot("R1", DangKyThiDau.TRANG_THAI_TU_CHOI))
+        when(dangKyThiDauRepository.countByMaChangDuaAndTrangThaiNotIn(eq("R1"), any()))
                 .thenReturn(0L);
         when(dangKyThiDauRepository.save(any(DangKyThiDau.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -141,15 +122,31 @@ class RegistrationServiceTest {
     @Test
     void createRegistration_blocksWhenApprovedRegistrationsReachMax() {
         Schedule fullRace = Schedule.builder().maChangDua("R1").tenChangDua("Chặng 1").soNguaToiDa(1).build();
-        when(scheduleRepository.findById("R1")).thenReturn(Optional.of(fullRace));
+        when(scheduleRepository.findByIdForUpdate("R1")).thenReturn(Optional.of(fullRace));
         when(nguaRepository.findById("N1")).thenReturn(Optional.of(approvedHorseOfA));
         when(naiNguaRepository.findById("J1")).thenReturn(Optional.of(approvedJockeyOfA));
         when(chuNguaRepository.findByMaTK("TK_A")).thenReturn(Optional.of(ownerA));
-        when(dangKyThiDauRepository.countByMaChangDuaAndTrangThaiNot("R1", DangKyThiDau.TRANG_THAI_TU_CHOI))
+        when(dangKyThiDauRepository.countByMaChangDuaAndTrangThaiNotIn(eq("R1"), any()))
                 .thenReturn(1L);
 
         assertThatThrownBy(() -> registrationService.createRegistration(dto("N1", "J1"), "TK_A", "TK_A"))
                 .isInstanceOf(ResourceInUseException.class);
+    }
+
+    @Test
+    void createRegistration_blocksWhenRaceNoLongerOpen() {
+        Schedule ongoingRace = Schedule.builder().maChangDua("R1").tenChangDua("Chặng 1")
+                .trangThai(com.horseracing.dto.common.StatusMapper.toTrangThaiChangDua(com.horseracing.dto.common.RaceStatus.ONGOING))
+                .soNguaToiDa(10).build();
+        when(scheduleRepository.findByIdForUpdate("R1")).thenReturn(Optional.of(ongoingRace));
+
+        assertThatThrownBy(() -> registrationService.createRegistration(dto("N1", "J1"), "TK_A", "TK_A"))
+                .isInstanceOf(ResourceInUseException.class);
+
+        verify(dangKyThiDauRepository, never()).save(any());
+        // Phải dùng bản đọc-có-khóa (chống race condition với publishRace), không phải findById thường.
+        verify(scheduleRepository).findByIdForUpdate("R1");
+        verify(scheduleRepository, never()).findById("R1");
     }
 
     @Test

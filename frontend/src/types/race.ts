@@ -7,6 +7,7 @@ export interface RaceCreateRequest {
   location: string;
   distance: number;
   maxHorses: number;
+  minHorses?: number;
   description?: string;
 }
 
@@ -21,7 +22,9 @@ export interface RaceResponse {
   location: string;
   distance: number;
   maxHorses: number;
+  minHorses: number;
   registeredCount: number;
+  approvedCount: number;
   status: RaceStatus;
   description?: string;
   createdAt: string;

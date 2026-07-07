@@ -23,6 +23,9 @@ export const raceApi = {
   publish: (id: string) =>
     axiosInstance.patch<ApiResponse<RaceResponse>>(`/races/${id}/publish`),
 
+  cancel: (id: string, reason: string) =>
+    axiosInstance.patch<ApiResponse<RaceResponse>>(`/races/${id}/cancel`, { reason }),
+
   getRegistrations: (id: string, params?: Record<string, unknown>) =>
     axiosInstance.get<ApiResponse<PageResponse<RegistrationResponse>>>(`/races/${id}/registrations`, { params }),
 

@@ -60,6 +60,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.error(ex.getMessage()));
     }
 
+    /** Trả kèm data.pendingCount để Frontend có thể dùng số liệu chính xác nếu cần, ngoài message. */
+    @ExceptionHandler(PendingRegistrationsExistException.class)
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> handlePendingRegistrationsExistException(
+            PendingRegistrationsExistException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+                ApiResponse.<java.util.Map<String, Object>>builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .data(java.util.Map.of("pendingCount", ex.getPendingCount()))
+                        .timestamp(java.time.Instant.now().toString())
+                        .build());
+    }
+
     @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiResponse<Void>> handleMaxUploadSizeExceededException(
             org.springframework.web.multipart.MaxUploadSizeExceededException ex) {

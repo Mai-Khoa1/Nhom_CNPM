@@ -27,7 +27,7 @@ import { getRaceStatusColor } from '@/utils/getStatusColor';
 import { formatDateTime } from '@/utils/formatDate';
 import { handleApiError } from '@/utils/apiHelpers';
 import { useDebounce } from '@/hooks/useDebounce';
-import { Plus, Loader2, Pencil, Trash2, PlayCircle, Lock } from 'lucide-react';
+import { Plus, Loader2, Pencil, Trash2, PlayCircle, Lock, Ban } from 'lucide-react';
 import { toast } from 'sonner';
 
 const STATUS_LABELS: Partial<Record<RaceStatus, string>> = {
@@ -100,6 +100,14 @@ const RaceForm = ({ form, seasons, seasonId, onSeasonChange, onSubmit, isPending
           <p className="text-sm text-red-500">{form.formState.errors.maxHorses.message}</p>
         )}
       </div>
+      <div className="col-span-2">
+        <Label>Số đăng ký đã duyệt tối thiểu để bắt đầu đua</Label>
+        <Input type="number" min={2} max={30} placeholder="Mặc định: 2" {...form.register('minHorses', { valueAsNumber: true })} />
+        {form.formState.errors.minHorses && (
+          <p className="text-sm text-red-500">{form.formState.errors.minHorses.message}</p>
+        )}
+        <p className="text-xs text-muted-foreground mt-1">Bỏ trống để dùng mặc định (2). Cuộc đua chỉ chuyển sang "Đang đua" khi đủ số đăng ký đã duyệt và đã phân làn đầy đủ.</p>
+      </div>
     </div>
     <div>
       <Label>Mô tả</Label>
@@ -122,6 +130,8 @@ const RaceManagementPage = () => {
   const [viewingRace, setViewingRace] = useState<RaceResponse | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editSeasonId, setEditSeasonId] = useState('');
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const debouncedKeyword = useDebounce(keyword);
 
   const params = {
@@ -189,6 +199,18 @@ const RaceManagementPage = () => {
     onError: (error) => toast.error(handleApiError(error)),
   });
 
+  const cancelMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => raceApi.cancel(id, reason),
+    onSuccess: (response) => {
+      toast.success('Đã hủy cuộc đua');
+      invalidateRaces();
+      setViewingRace(response.data.data);
+      setCancelDialogOpen(false);
+      setCancelReason('');
+    },
+    onError: (error) => toast.error(handleApiError(error)),
+  });
+
   const races = data?.data?.data?.content;
   const pageInfo = data?.data?.data;
   const seasons: SeasonResponse[] = seasonsData?.data?.data?.content ?? [];
@@ -211,6 +233,7 @@ const RaceManagementPage = () => {
       location: viewingRace.location,
       distance: viewingRace.distance,
       maxHorses: viewingRace.maxHorses,
+      minHorses: viewingRace.minHorses,
       description: viewingRace.description ?? '',
     });
     setIsEditing(true);
@@ -231,6 +254,9 @@ const RaceManagementPage = () => {
 
   const canPublish = viewingRace?.status === RaceStatus.OPEN;
   const canClose = viewingRace?.status === RaceStatus.ONGOING;
+  const canEdit = viewingRace?.status === RaceStatus.OPEN;
+  const canCancelRace = viewingRace?.status === RaceStatus.OPEN || viewingRace?.status === RaceStatus.ONGOING;
+  const hasRegistrations = (viewingRace?.registeredCount ?? 0) > 0;
 
   return (
     <div>
@@ -322,6 +348,10 @@ const RaceManagementPage = () => {
                   <p className="text-muted-foreground">Đăng ký</p>
                   <p className="font-medium">{viewingRace.registeredCount}/{viewingRace.maxHorses ?? '∞'}</p>
                 </div>
+                <div>
+                  <p className="text-muted-foreground">Đã duyệt / tối thiểu để đua</p>
+                  <p className="font-medium">{viewingRace.approvedCount}/{viewingRace.minHorses}</p>
+                </div>
                 <div className="col-span-2">
                   <p className="text-muted-foreground">Trạng thái</p>
                   <StatusBadge status={viewingRace.status} colorClass={getRaceStatusColor(viewingRace.status)} />
@@ -352,7 +382,7 @@ const RaceManagementPage = () => {
                         </AlertDialogTitle>
                         <AlertDialogDescription>
                           {canPublish
-                            ? 'Chuyển trạng thái sang "Đang đua". Sau khi bắt đầu, đăng ký sẽ bị đóng.'
+                            ? `Chuyển trạng thái sang "Đang đua". Cần tối thiểu ${viewingRace.minHorses} đăng ký đã duyệt và tất cả phải đã được phân làn - hệ thống hiện có ${viewingRace.approvedCount} đăng ký đã duyệt. Sau khi bắt đầu, không thể duyệt đăng ký hoặc sửa làn/thông tin cuộc đua nữa.`
                             : 'Chuyển trạng thái sang "Hoàn thành". Có thể nhập kết quả sau bước này.'
                           }
                         </AlertDialogDescription>
@@ -367,35 +397,76 @@ const RaceManagementPage = () => {
                   </AlertDialog>
                 )}
 
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="outline" disabled={deleteMutation.isPending}>
-                      <Trash2 className="h-4 w-4 mr-2 text-red-500" />Xóa
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Xóa cuộc đua "{viewingRace.name}"?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Hành động này không thể hoàn tác. Không thể xóa cuộc đua đã có kết quả thi đấu.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Hủy</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-red-600 hover:bg-red-700"
-                        onClick={() => deleteMutation.mutate(viewingRace.id)}
-                      >
-                        Xóa
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                {!hasRegistrations ? (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" disabled={deleteMutation.isPending}>
+                        <Trash2 className="h-4 w-4 mr-2 text-red-500" />Xóa
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Xóa cuộc đua "{viewingRace.name}"?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Hành động này không thể hoàn tác. Chỉ áp dụng vì cuộc đua này chưa có đăng ký nào.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Hủy</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-red-600 hover:bg-red-700"
+                          onClick={() => deleteMutation.mutate(viewingRace.id)}
+                        >
+                          Xóa
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                ) : canCancelRace ? (
+                  <Dialog open={cancelDialogOpen} onOpenChange={(open) => { setCancelDialogOpen(open); if (!open) setCancelReason(''); }}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" className="text-red-600" disabled={cancelMutation.isPending}>
+                        <Ban className="h-4 w-4 mr-2" />Hủy cuộc đua
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Hủy cuộc đua "{viewingRace.name}"?</DialogTitle>
+                      </DialogHeader>
+                      <p className="text-sm text-muted-foreground">
+                        Cuộc đua này đã có đăng ký nên không thể xóa cứng. Mọi đăng ký đang Chờ duyệt/Đã duyệt
+                        sẽ tự động chuyển sang Đã hủy và Chủ ngựa liên quan sẽ nhận thông báo.
+                      </p>
+                      <div>
+                        <Label>Lý do hủy *</Label>
+                        <Textarea value={cancelReason} onChange={(e) => setCancelReason(e.target.value)} rows={3} placeholder="VD: Thời tiết xấu, sự cố trường đua..." />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>Đóng</Button>
+                        <Button
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                          disabled={!cancelReason.trim() || cancelMutation.isPending}
+                          onClick={() => cancelMutation.mutate({ id: viewingRace.id, reason: cancelReason })}
+                        >
+                          {cancelMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                          Xác nhận hủy
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                ) : null}
 
-                <Button onClick={startEditing} className="bg-[#D4A017] hover:bg-[#C8940A] text-white">
-                  <Pencil className="h-4 w-4 mr-2" />Sửa
-                </Button>
+                {canEdit && (
+                  <Button onClick={startEditing} className="bg-[#D4A017] hover:bg-[#C8940A] text-white">
+                    <Pencil className="h-4 w-4 mr-2" />Sửa
+                  </Button>
+                )}
               </div>
+              {!canEdit && (
+                <p className="text-xs text-muted-foreground text-right">
+                  Cuộc đua đã ở trạng thái {viewingRace.status} - không thể sửa thông tin nữa.
+                </p>
+              )}
             </div>
           )}
 

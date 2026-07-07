@@ -14,14 +14,16 @@ import { StatusBadge } from '@/components/common/StatusBadge';
 import { getRegistrationStatusColor } from '@/utils/getStatusColor';
 import { formatDate, formatDateTime } from '@/utils/formatDate';
 import { handleApiError } from '@/utils/apiHelpers';
-import { Check, X, Loader2 } from 'lucide-react';
+import { Check, X, Ban, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+
+type ReasonAction = 'REJECT' | 'DISQUALIFY' | null;
 
 const RegistrationManagementPage = () => {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [viewing, setViewing] = useState<RegistrationResponse | null>(null);
-  const [rejecting, setRejecting] = useState(false);
+  const [reasonAction, setReasonAction] = useState<ReasonAction>(null);
   const [rejectReason, setRejectReason] = useState('');
 
   const params = { page, size: 10 };
@@ -49,10 +51,36 @@ const RegistrationManagementPage = () => {
       toast.success('Đã từ chối đăng ký');
       invalidate();
       setViewing(null);
-      setRejecting(false);
+      setReasonAction(null);
       setRejectReason('');
     },
     onError: (error) => toast.error(handleApiError(error)),
+  });
+
+  const disqualifyMutation = useMutation({
+    mutationFn: ({ id, reason, confirmRevokePublish }: { id: string; reason: string; confirmRevokePublish?: boolean }) =>
+      registrationApi.disqualify(id, reason, confirmRevokePublish),
+    onSuccess: () => {
+      toast.success('Đã loại đăng ký');
+      invalidate();
+      setViewing(null);
+      setReasonAction(null);
+      setRejectReason('');
+    },
+    onError: (error, vars) => {
+      // Lỗi 4: nếu đăng ký này đã có kết quả công bố, backend yêu cầu xác nhận thu hồi công bố trước.
+      const message = handleApiError(error);
+      if (message?.includes('Xác nhận rõ ràng') && !vars.confirmRevokePublish) {
+        const confirmed = window.confirm(
+          `${message}\n\nBấm OK để xác nhận thu hồi công bố và tiếp tục loại đăng ký này.`
+        );
+        if (confirmed) {
+          disqualifyMutation.mutate({ ...vars, confirmRevokePublish: true });
+          return;
+        }
+      }
+      toast.error(message);
+    },
   });
 
   const registrations = data?.data?.data?.content;
@@ -60,7 +88,7 @@ const RegistrationManagementPage = () => {
 
   const openDetail = (r: RegistrationResponse) => {
     setViewing(r);
-    setRejecting(false);
+    setReasonAction(null);
     setRejectReason('');
   };
 
@@ -87,11 +115,11 @@ const RegistrationManagementPage = () => {
         <PaginationControl page={pageInfo.page} totalPages={pageInfo.totalPages} totalElements={pageInfo.totalElements} onPageChange={setPage} />
       )}
 
-      <Dialog open={!!viewing} onOpenChange={(open) => { if (!open) { setViewing(null); setRejecting(false); setRejectReason(''); } }}>
+      <Dialog open={!!viewing} onOpenChange={(open) => { if (!open) { setViewing(null); setReasonAction(null); setRejectReason(''); } }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Thông tin đăng ký thi đấu</DialogTitle></DialogHeader>
 
-          {viewing && !rejecting && (
+          {viewing && !reasonAction && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -128,16 +156,20 @@ const RegistrationManagementPage = () => {
                 </div>
               </div>
 
-              {viewing.status === RegistrationStatus.REJECTED && viewing.rejectReason && (
+              {(viewing.status === RegistrationStatus.REJECTED
+                || viewing.status === RegistrationStatus.CANCELLED
+                || viewing.status === RegistrationStatus.DISQUALIFIED) && viewing.reason && (
                 <div>
-                  <p className="text-sm text-muted-foreground">Lý do từ chối</p>
-                  <p className="font-medium text-red-600">{viewing.rejectReason}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {viewing.status === RegistrationStatus.CANCELLED ? 'Lý do hủy' : 'Lý do'}
+                  </p>
+                  <p className="font-medium text-red-600">{viewing.reason}</p>
                 </div>
               )}
 
               {viewing.status === RegistrationStatus.PENDING && (
                 <div className="flex justify-end gap-2 pt-2">
-                  <Button variant="outline" className="text-red-600" onClick={() => setRejecting(true)}>
+                  <Button variant="outline" className="text-red-600" onClick={() => setReasonAction('REJECT')}>
                     <X className="h-4 w-4 mr-2" />Không duyệt
                   </Button>
                   <Button
@@ -150,30 +182,49 @@ const RegistrationManagementPage = () => {
                   </Button>
                 </div>
               )}
+
+              {viewing.status === RegistrationStatus.APPROVED && (
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" className="text-purple-600" onClick={() => setReasonAction('DISQUALIFY')}>
+                    <Ban className="h-4 w-4 mr-2" />Loại đăng ký
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 
-          {viewing && rejecting && (
+          {viewing && reasonAction && (
             <div className="space-y-4">
               <div>
-                <Label>Lý do không duyệt *</Label>
+                <Label>{reasonAction === 'REJECT' ? 'Lý do không duyệt *' : 'Lý do loại *'}</Label>
                 <Textarea
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
-                  placeholder="Nhập lý do từ chối đăng ký này..."
+                  placeholder={reasonAction === 'REJECT' ? 'Nhập lý do từ chối đăng ký này...' : 'Nhập lý do loại đăng ký này...'}
                   rows={4}
                 />
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setRejecting(false)}>Hủy</Button>
-                <Button
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                  disabled={!rejectReason.trim() || rejectMutation.isPending}
-                  onClick={() => rejectMutation.mutate({ id: viewing.id, reason: rejectReason })}
-                >
-                  {rejectMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Xác nhận không duyệt
-                </Button>
+                <Button variant="outline" onClick={() => setReasonAction(null)}>Hủy</Button>
+                {reasonAction === 'REJECT' ? (
+                  <Button
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                    disabled={!rejectReason.trim() || rejectMutation.isPending}
+                    onClick={() => rejectMutation.mutate({ id: viewing.id, reason: rejectReason })}
+                  >
+                    {rejectMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Xác nhận không duyệt
+                  </Button>
+                ) : (
+                  <Button
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                    disabled={!rejectReason.trim() || disqualifyMutation.isPending}
+                    onClick={() => disqualifyMutation.mutate({ id: viewing.id, reason: rejectReason })}
+                  >
+                    {disqualifyMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Xác nhận loại
+                  </Button>
+                )}
               </div>
             </div>
           )}

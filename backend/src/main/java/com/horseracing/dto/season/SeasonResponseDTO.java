@@ -20,6 +20,8 @@ public class SeasonResponseDTO {
     private LocalDate endDate;
     private SeasonStatus status;
     private String description;
+    private String organizerId;
+    private String organizerName;
     private String createdBy;
     private LocalDateTime createdAt;
 }

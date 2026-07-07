@@ -26,6 +26,9 @@ public class MuaGiai {
     @Column(name = "maMuaGiai", length = 50)
     private String maMuaGiai;
 
+    @Column(name = "maBTC", length = 50)
+    private String maBTC;
+
     @Column(name = "tenMuaGiai", nullable = false, length = 100)
     private String tenMuaGiai;
 
