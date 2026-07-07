@@ -26,9 +26,10 @@ public interface ResultRepository extends JpaRepository<Result, String> {
             "SUM(CASE WHEN kq.hang = 1 THEN 1 ELSE 0 END) " +
             "FROM KetQuaThiDau kq " +
             "JOIN ChangDua cd ON kq.maChangDua = cd.maChangDua " +
+            "JOIN DangKyThiDau dk ON dk.maChangDua = kq.maChangDua AND dk.maNgua = kq.maNgua " +
             "JOIN Ngua n ON kq.maNgua = n.maNgua " +
             "JOIN ChuNgua c ON n.maChuNgua = c.maChuNgua " +
-            "WHERE cd.maMuaGiai = :maMuaGiai AND kq.trangThaiCongBo = 'Đã công bố' " +
+            "WHERE cd.maMuaGiai = :maMuaGiai AND kq.trangThaiCongBo = 'Đã công bố' AND dk.trangThai = 'Đã duyệt' " +
             "GROUP BY n.maNgua, n.tenNgua, c.hoTen " +
             "ORDER BY SUM(kq.diem) DESC", nativeQuery = true)
     List<Object[]> findHorseRankingBySeason(@Param("maMuaGiai") String maMuaGiai);
@@ -41,7 +42,7 @@ public interface ResultRepository extends JpaRepository<Result, String> {
             "JOIN DangKyThiDau dk ON dk.maChangDua = kq.maChangDua AND dk.maNgua = kq.maNgua " +
             "JOIN Jockey j ON dk.maNaiNgua = j.maNaiNgua " +
             "JOIN ChuNgua c ON j.maChuNgua = c.maChuNgua " +
-            "WHERE cd.maMuaGiai = :maMuaGiai AND kq.trangThaiCongBo = 'Đã công bố' " +
+            "WHERE cd.maMuaGiai = :maMuaGiai AND kq.trangThaiCongBo = 'Đã công bố' AND dk.trangThai = 'Đã duyệt' " +
             "GROUP BY j.maNaiNgua, j.hoTen, c.hoTen " +
             "ORDER BY SUM(kq.diem) DESC", nativeQuery = true)
     List<Object[]> findJockeyRankingBySeason(@Param("maMuaGiai") String maMuaGiai);

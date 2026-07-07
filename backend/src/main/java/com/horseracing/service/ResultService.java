@@ -1,6 +1,8 @@
 package com.horseracing.service;
 
 import com.horseracing.dto.common.NotificationType;
+import com.horseracing.dto.common.RegistrationStatus;
+import com.horseracing.dto.common.StatusMapper;
 import com.horseracing.dto.result.*;
 import com.horseracing.entity.*;
 import com.horseracing.exception.ResourceInUseException;
@@ -56,6 +58,13 @@ public class ResultService {
             DangKyThiDau registration = dangKyThiDauRepository.findById(detail.getRegistrationId())
                     .orElseThrow(() -> new ResourceNotFoundException("Đăng ký thi đấu", "registrationId", detail.getRegistrationId()));
 
+            RegistrationStatus registrationStatus = StatusMapper.toRegistrationStatus(registration.getTrangThai());
+            if (registrationStatus != RegistrationStatus.APPROVED) {
+                throw new ResourceInUseException(
+                        "Đăng ký " + detail.getRegistrationId() + " đang ở trạng thái " + registrationStatus
+                        + ", không thể nhập kết quả (chỉ đăng ký ĐÃ DUYỆT mới được nhập kết quả).");
+            }
+
             Result result = resultRepository.findByMaChangDuaAndMaNgua(request.getRaceId(), registration.getMaNgua())
                     .orElseGet(() -> Result.builder()
                             .maKetQua(generateMaKetQua())
@@ -92,19 +101,36 @@ public class ResultService {
             throw new ResourceInUseException("Chặng đua '" + schedule.getTenChangDua() + "' chưa có kết quả để công bố.");
         }
 
+        // Ngựa đã bị loại/hủy/từ chối SAU KHI có kết quả (đăng ký không còn APPROVED) - không công bố,
+        // không tính điểm, dù bị loại trước/trong/sau khi race kết thúc.
+        Map<String, DangKyThiDau> registrationByHorse = dangKyThiDauRepository.findByMaChangDua(raceId).stream()
+                .collect(Collectors.toMap(DangKyThiDau::getMaNgua, r -> r, (a, b) -> a));
+        List<Result> publishableResults = results.stream()
+                .filter(r -> {
+                    DangKyThiDau registration = registrationByHorse.get(r.getMaNgua());
+                    return registration != null
+                            && RegistrationStatus.APPROVED == StatusMapper.toRegistrationStatus(registration.getTrangThai());
+                })
+                .collect(Collectors.toList());
+        if (publishableResults.isEmpty()) {
+            throw new ResourceInUseException(
+                    "Chặng đua '" + schedule.getTenChangDua() + "' không còn kết quả hợp lệ để công bố "
+                    + "(các đăng ký liên quan đã bị loại/hủy/từ chối).");
+        }
+
         LocalDateTime now = LocalDateTime.now();
-        results.forEach(r -> {
+        publishableResults.forEach(r -> {
             // Tính lại điểm theo luật điểm hiện hành của mùa giải tại thời điểm công bố (điểm chính thức).
             r.setDiem(resolvePoints(schedule.getMaMuaGiai(), r.getHang()));
             r.setTrangThaiCongBo(Result.TRANG_THAI_DA_CONG_BO);
             r.setNgayCongBo(now);
         });
-        resultRepository.saveAll(results);
+        resultRepository.saveAll(publishableResults);
 
         nhatKyHoatDongService.writeAuditLog(staffId, "PUBLISH_RESULT", "Race:" + raceId,
                 "Công bố kết quả chặng đua: " + schedule.getTenChangDua());
 
-        notifyOwnersOnPublish(raceId, schedule, results);
+        notifyOwnersOnPublish(raceId, schedule, publishableResults);
 
         return getResultsByRace(raceId);
     }

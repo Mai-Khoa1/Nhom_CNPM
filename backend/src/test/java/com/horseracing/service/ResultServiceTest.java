@@ -47,7 +47,8 @@ class ResultServiceTest {
     @BeforeEach
     void setUp() {
         race = Schedule.builder().maChangDua("R1").maMuaGiai("MG1").tenChangDua("Chặng 1").build();
-        registration = DangKyThiDau.builder().maDangKy("DK1").maChangDua("R1").maNgua("N1").maNaiNgua("J1").build();
+        registration = DangKyThiDau.builder().maDangKy("DK1").maChangDua("R1").maNgua("N1").maNaiNgua("J1")
+                .trangThai(DangKyThiDau.TRANG_THAI_DA_DUYET).build();
     }
 
     @Test
@@ -158,6 +159,7 @@ class ResultServiceTest {
         when(scheduleRepository.findById("R1")).thenReturn(Optional.of(race));
         Result draft = Result.builder().maKetQua("K1").maChangDua("R1").maNgua("N1").hang(1).diem(0.0).build();
         when(resultRepository.findByMaChangDua("R1")).thenReturn(List.of(draft));
+        when(dangKyThiDauRepository.findByMaChangDua("R1")).thenReturn(List.of(registration));
         when(luatDiemRepository.findByMaMuaGiaiAndHang("MG1", 1))
                 .thenReturn(Optional.of(LuatDiem.builder().hang(1).diem(10.0).build()));
         when(nguaRepository.findById("N1")).thenReturn(Optional.empty());
