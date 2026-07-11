@@ -96,16 +96,18 @@ const AdminLayout = () => {
             <Button variant="ghost" size="icon" onClick={toggleTheme}>
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
-            <Link to="/admin/notifications" className="relative">
-              <Button variant="ghost" size="icon">
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-[10px] text-white flex items-center justify-center">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                )}
-              </Button>
-            </Link>
+            {role !== Role.ADMIN && (
+              <Link to="/admin/notifications" className="relative">
+                <Button variant="ghost" size="icon">
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-[10px] text-white flex items-center justify-center">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </Link>
+            )}
             <div className="flex items-center gap-2 pl-3 border-l">
               <span className="text-sm font-medium">{user?.fullName}</span>
               <Button variant="ghost" size="icon" onClick={logout}>
