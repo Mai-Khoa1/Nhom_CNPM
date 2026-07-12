@@ -91,9 +91,19 @@ jobs:
           az webapp list --query "[].name" -o table || true
           az webapp show --name "$APP_NAME" --query name -o tsv > /tmp/appname.txt 2>/tmp/appname.err || true
           if [ ! -s /tmp/appname.txt ]; then
-            echo "::error::Azure Web App '$APP_NAME' was not found after resolving the subscription."
-            cat /tmp/appname.err || true
-            exit 1
+            echo "Azure Web App '$APP_NAME' was not found. Creating it now..."
+            RESOURCE_GROUP="${{ secrets.AZURE_RESOURCE_GROUP }}"
+            if [ -z "$RESOURCE_GROUP" ]; then
+              RESOURCE_GROUP="rg-horse-racing"
+            fi
+            PLAN_NAME="${{ secrets.AZURE_APP_SERVICE_PLAN }}"
+            if [ -z "$PLAN_NAME" ]; then
+              PLAN_NAME="plan-horse-racing"
+            fi
+            az group create --name "$RESOURCE_GROUP" --location "southeastasia" >/dev/null
+            az appservice plan create --name "$PLAN_NAME" --resource-group "$RESOURCE_GROUP" --is-linux --sku B1 >/dev/null
+            az webapp create --resource-group "$RESOURCE_GROUP" --plan "$PLAN_NAME" --name "$APP_NAME" --runtime "JAVA|17-java17" >/dev/null
+            echo "Created Azure Web App: $APP_NAME"
           fi
           RESOURCE_GROUP=$(az webapp show --name "$APP_NAME" --query resourceGroup -o tsv)
           az webapp config appsettings set \
