@@ -36,13 +36,28 @@ jobs:
         run: npm run build
 
       - name: Prepare deployment package
-        run: cp frontend/web.config frontend/dist/web.config
+        run: |
+          mkdir -p frontend/deploy
+          cp -r frontend/dist frontend/deploy/dist
+          cp frontend/package.json frontend/deploy/package.json
+          cp frontend/server.js frontend/deploy/server.js
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
-          path: frontend/dist
+          path: frontend/deploy
+
+      - name: Validate deployment secrets
+        run: |
+          if [ -z "${{ secrets.AZURE_CREDENTIALS }}" ]; then
+            echo "::error::Secret AZURE_CREDENTIALS is empty. Add it in GitHub Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          if [ -z "${{ secrets.AZURE_WEBAPP_NAME_FRONTEND }}" ]; then
+            echo "::error::Secret AZURE_WEBAPP_NAME_FRONTEND is empty. Add the Azure App Service name exactly as created in Azure."
+            exit 1
+          fi
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -53,4 +68,4 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.AZURE_WEBAPP_NAME_FRONTEND }}
-          package: frontend/dist
+          package: frontend/deploy

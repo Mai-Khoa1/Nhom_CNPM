@@ -27,6 +27,17 @@ jobs:
         working-directory: backend
         run: mvn clean package -DskipTests
 
+      - name: Validate deployment secrets
+        run: |
+          if [ -z "${{ secrets.AZURE_CREDENTIALS }}" ]; then
+            echo "::error::Secret AZURE_CREDENTIALS is empty. Add it in GitHub Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          if [ -z "${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}" ]; then
+            echo "::error::Secret AZURE_WEBAPP_NAME_BACKEND is empty. Add the Azure App Service name exactly as created in Azure."
+            exit 1
+          fi
+
       - name: Login to Azure
         uses: azure/login@v2
         with:
