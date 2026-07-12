@@ -108,3 +108,17 @@ jobs:
           az webapp restart \
             --resource-group "$RESOURCE_GROUP" \
             --name "$APP_NAME"
+
+      - name: Verify deployed endpoints
+        run: |
+          HOSTNAME=$(az webapp show \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$APP_NAME" \
+            --query defaultHostName -o tsv)
+          echo "Default hostname: $HOSTNAME"
+          echo "--- /api/v1/ ---"
+          curl -I "https://$HOSTNAME/api/v1/" || true
+          echo "--- /api/v1/health ---"
+          curl -I "https://$HOSTNAME/api/v1/health" || true
+          echo "--- /api/v1/swagger-ui/index.html ---"
+          curl -I "https://$HOSTNAME/api/v1/swagger-ui/index.html" || true
