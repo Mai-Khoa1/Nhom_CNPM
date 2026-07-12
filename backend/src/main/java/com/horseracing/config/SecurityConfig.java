@@ -87,7 +87,17 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Auth công khai
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/", "/health").permitAll()
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/index.html",
+                                "/v3/api-docs/**",
+                                "/api/v1/swagger-ui/**",
+                                "/api/v1/swagger-ui.html",
+                                "/api/v1/swagger-ui/index.html",
+                                "/api/v1/v3/api-docs/**"
+                        ).permitAll()
 
                         // Xem công khai (Guest) - danh sách/chi tiết ngựa, jockey, chặng đua, kết quả,
                         // mùa giải, bảng xếp hạng
