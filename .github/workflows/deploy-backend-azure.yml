@@ -46,7 +46,7 @@ jobs:
         working-directory: backend
         run: mvn clean package -DskipTests
 
-      - name: Verify built JAR exists
+      - name: Prepare deployment package
         run: |
           JAR_PATH="backend/target/horse-racing-backend.jar"
           if [ ! -f "$JAR_PATH" ]; then
@@ -55,6 +55,12 @@ jobs:
             exit 1
           fi
           echo "Found JAR: $JAR_PATH"
+          mkdir -p deployment-package
+          cp "$JAR_PATH" deployment-package/app.jar
+          cd deployment-package
+          zip -r ../backend-deploy.zip app.jar
+          cd ..
+          ls -lh backend-deploy.zip
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -89,13 +95,13 @@ jobs:
             --name "$APP_NAME" \
             --always-on true || true
 
-      - name: Deploy JAR to Azure Web App
+      - name: Deploy package to Azure Web App
         run: |
           az webapp deploy \
             --resource-group "$RESOURCE_GROUP" \
             --name "$APP_NAME" \
-            --src-path backend/target/horse-racing-backend.jar \
-            --type jar
+            --src-path backend-deploy.zip \
+            --type zip
 
       - name: Restart Azure Web App
         run: |
