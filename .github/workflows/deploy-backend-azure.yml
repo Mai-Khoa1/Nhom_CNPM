@@ -27,16 +27,23 @@ jobs:
         working-directory: backend
         run: mvn clean package -DskipTests
 
-      - name: Validate deployment secrets
+      - name: Validate deployment credentials
         run: |
           if [ -z "${{ secrets.AZURE_CREDENTIALS }}" ]; then
             echo "::error::Secret AZURE_CREDENTIALS is empty. Add it in GitHub Settings > Secrets and variables > Actions."
             exit 1
           fi
-          if [ -z "${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}" ]; then
-            echo "::error::Secret AZURE_WEBAPP_NAME_BACKEND is empty. Add the Azure App Service name exactly as created in Azure."
-            exit 1
+
+      - name: Resolve Azure Web App name
+        run: |
+          APP_NAME="${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}"
+          if [ -z "$APP_NAME" ]; then
+            APP_NAME="horse-racing-api"
+            echo "Using default Azure Web App name: $APP_NAME"
+          else
+            echo "Using Azure Web App name from secret: $APP_NAME"
           fi
+          echo "APP_NAME=$APP_NAME" >> "$GITHUB_ENV"
 
       - name: Login to Azure
         uses: azure/login@v2
@@ -45,11 +52,7 @@ jobs:
 
       - name: Configure Azure Web App
         run: |
-          APP_NAME="${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}"
-          if [ -z "$APP_NAME" ]; then
-            echo "::error::Secret AZURE_WEBAPP_NAME_BACKEND is empty. Add the exact Azure Web App name."
-            exit 1
-          fi
+          APP_NAME="${{ env.APP_NAME }}"
           echo "Checking Azure Web App name: $APP_NAME"
           az account show --query "{subscriptionId:id, tenantId:tenantId}" -o json
           echo "Available web apps in the current subscription:"
@@ -72,7 +75,7 @@ jobs:
 
       - name: Deploy JAR to Azure Web App
         run: |
-          APP_NAME="${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}"
+          APP_NAME="${{ env.APP_NAME }}"
           RESOURCE_GROUP=$(az webapp show --name "$APP_NAME" --query resourceGroup -o tsv)
           az webapp deploy \
             --resource-group "$RESOURCE_GROUP" \
@@ -82,6 +85,6 @@ jobs:
 
       - name: Restart Azure Web App
         run: |
-          APP_NAME="${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}"
+          APP_NAME="${{ env.APP_NAME }}"
           RESOURCE_GROUP=$(az webapp show --name "$APP_NAME" --query resourceGroup -o tsv)
           az webapp restart --resource-group "$RESOURCE_GROUP" --name "$APP_NAME"
