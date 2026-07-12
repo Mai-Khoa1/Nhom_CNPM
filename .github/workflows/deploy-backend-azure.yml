@@ -43,9 +43,32 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}
-          package: backend/target/horse-racing-backend.jar
-          startup-file: java -jar /home/site/wwwroot/horse-racing-backend.jar
+      - name: Configure Azure Web App
+        run: |
+          RESOURCE_GROUP=$(az webapp show --name "${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}" --query resourceGroup -o tsv)
+          az webapp config appsettings set \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}" \
+            --settings WEBSITE_RUN_FROM_PACKAGE=1 WEBSITES_PORT=80 JAVA_OPTS="-Dserver.port=80" SERVER_PORT=80
+          az webapp config set \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}" \
+            --startup-file "java -jar /home/site/wwwroot/horse-racing-backend.jar"
+          az webapp config set \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}" \
+            --always-on true
+
+      - name: Deploy JAR to Azure Web App
+        run: |
+          RESOURCE_GROUP=$(az webapp show --name "${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}" --query resourceGroup -o tsv)
+          az webapp deploy \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}" \
+            --src-path backend/target/horse-racing-backend.jar \
+            --type jar
+
+      - name: Restart Azure Web App
+        run: |
+          RESOURCE_GROUP=$(az webapp show --name "${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}" --query resourceGroup -o tsv)
+          az webapp restart --resource-group "$RESOURCE_GROUP" --name "${{ secrets.AZURE_WEBAPP_NAME_BACKEND }}"
