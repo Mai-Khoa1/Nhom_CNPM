@@ -50,16 +50,40 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Configure Azure Web App
+      - name: Resolve Azure subscription and web app
         run: |
           APP_NAME="${{ env.APP_NAME }}"
           echo "Checking Azure Web App name: $APP_NAME"
           az account show --query "{subscriptionId:id, tenantId:tenantId}" -o json
-          echo "Available web apps in the current subscription:"
+          echo "Scanning subscriptions accessible to the provided credentials..."
+          FOUND_SUBSCRIPTION=""
+          for SUB in $(az account list --query "[].id" -o tsv); do
+            az account set --subscription "$SUB" >/dev/null 2>&1 || true
+            if az webapp show --name "$APP_NAME" --query name -o tsv > /tmp/appname.txt 2>/tmp/appname.err 2>/dev/null; then
+              FOUND_SUBSCRIPTION="$SUB"
+              break
+            fi
+          done
+          if [ -z "$FOUND_SUBSCRIPTION" ]; then
+            echo "::error::Azure Web App '$APP_NAME' was not found in any subscription accessible to the provided credentials."
+            echo "Available subscriptions:"
+            az account list --query "[].{name:name,id:id}" -o table || true
+            cat /tmp/appname.err || true
+            exit 1
+          fi
+          az account set --subscription "$FOUND_SUBSCRIPTION"
+          echo "Using subscription: $FOUND_SUBSCRIPTION"
+          echo "SUBSCRIPTION_ID=$FOUND_SUBSCRIPTION" >> "$GITHUB_ENV"
+
+      - name: Configure Azure Web App
+        run: |
+          APP_NAME="${{ env.APP_NAME }}"
+          echo "Checking Azure Web App name: $APP_NAME"
+          echo "Available web apps in the resolved subscription:"
           az webapp list --query "[].name" -o table || true
           az webapp show --name "$APP_NAME" --query name -o tsv > /tmp/appname.txt 2>/tmp/appname.err || true
           if [ ! -s /tmp/appname.txt ]; then
-            echo "::error::Azure Web App '$APP_NAME' was not found. Check the app name in GitHub secret AZURE_WEBAPP_NAME_BACKEND."
+            echo "::error::Azure Web App '$APP_NAME' was not found after resolving the subscription."
             cat /tmp/appname.err || true
             exit 1
           fi
