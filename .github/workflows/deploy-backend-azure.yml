@@ -55,25 +55,33 @@ jobs:
           APP_NAME="${{ env.APP_NAME }}"
           echo "Checking Azure Web App name: $APP_NAME"
           az account show --query "{subscriptionId:id, tenantId:tenantId}" -o json
-          echo "Scanning subscriptions accessible to the provided credentials..."
-          FOUND_SUBSCRIPTION=""
-          for SUB in $(az account list --query "[].id" -o tsv); do
-            az account set --subscription "$SUB" >/dev/null 2>&1 || true
-            if az webapp show --name "$APP_NAME" --query name -o tsv > /tmp/appname.txt 2>/tmp/appname.err 2>/dev/null; then
-              FOUND_SUBSCRIPTION="$SUB"
-              break
+
+          SUBSCRIPTION_ID="${{ secrets.AZURE_SUBSCRIPTION_ID }}"
+          if [ -n "$SUBSCRIPTION_ID" ]; then
+            echo "Using subscription from secret: $SUBSCRIPTION_ID"
+            az account set --subscription "$SUBSCRIPTION_ID"
+          else
+            echo "No AZURE_SUBSCRIPTION_ID secret provided. Scanning subscriptions accessible to the provided credentials..."
+            FOUND_SUBSCRIPTION=""
+            for SUB in $(az account list --query "[].id" -o tsv); do
+              az account set --subscription "$SUB" >/dev/null 2>&1 || true
+              if az webapp show --name "$APP_NAME" --query name -o tsv > /tmp/appname.txt 2>/tmp/appname.err 2>/dev/null; then
+                FOUND_SUBSCRIPTION="$SUB"
+                break
+              fi
+            done
+            if [ -z "$FOUND_SUBSCRIPTION" ]; then
+              echo "::error::Azure Web App '$APP_NAME' was not found in any subscription accessible to the provided credentials."
+              echo "Available subscriptions:"
+              az account list --query "[].{name:name,id:id}" -o table || true
+              cat /tmp/appname.err || true
+              exit 1
             fi
-          done
-          if [ -z "$FOUND_SUBSCRIPTION" ]; then
-            echo "::error::Azure Web App '$APP_NAME' was not found in any subscription accessible to the provided credentials."
-            echo "Available subscriptions:"
-            az account list --query "[].{name:name,id:id}" -o table || true
-            cat /tmp/appname.err || true
-            exit 1
+            az account set --subscription "$FOUND_SUBSCRIPTION"
+            echo "Using subscription: $FOUND_SUBSCRIPTION"
+            SUBSCRIPTION_ID="$FOUND_SUBSCRIPTION"
           fi
-          az account set --subscription "$FOUND_SUBSCRIPTION"
-          echo "Using subscription: $FOUND_SUBSCRIPTION"
-          echo "SUBSCRIPTION_ID=$FOUND_SUBSCRIPTION" >> "$GITHUB_ENV"
+          echo "SUBSCRIPTION_ID=$SUBSCRIPTION_ID" >> "$GITHUB_ENV"
 
       - name: Configure Azure Web App
         run: |
