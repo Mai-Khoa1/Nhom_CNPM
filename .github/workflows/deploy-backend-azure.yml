@@ -50,6 +50,10 @@ jobs:
             echo "::error::Secret AZURE_WEBAPP_NAME_BACKEND is empty. Add the exact Azure Web App name."
             exit 1
           fi
+          echo "Checking Azure Web App name: $APP_NAME"
+          az account show --query "{subscriptionId:id, tenantId:tenantId}" -o json
+          echo "Available web apps in the current subscription:"
+          az webapp list --query "[].name" -o table || true
           az webapp show --name "$APP_NAME" --query name -o tsv > /tmp/appname.txt 2>/tmp/appname.err || true
           if [ ! -s /tmp/appname.txt ]; then
             echo "::error::Azure Web App '$APP_NAME' was not found. Check the app name in GitHub secret AZURE_WEBAPP_NAME_BACKEND."
