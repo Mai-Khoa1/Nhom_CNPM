@@ -37,10 +37,14 @@ jobs:
 
       - name: Prepare deployment package
         run: |
+          pwd
+          ls -la
+          ls -la frontend
           mkdir -p frontend/deploy
           cp -r frontend/dist frontend/deploy/dist
           cp frontend/package.json frontend/deploy/package.json
           cp frontend/server.js frontend/deploy/server.js
+          ls -la frontend/deploy
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
